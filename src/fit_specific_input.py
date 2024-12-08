@@ -1,15 +1,36 @@
 import tensorflow as tf
 import numpy as np
 
-# Load pre-trained offline model
-offline_model = tf.keras.models.load_model('../models/offline_model.h5',
-                                           custom_objects={'offline_loss': offline_loss})
 
-# Placeholder for cost matrix and input vector creation
-C = cost_matrix
-n = C.shape[0]
-C_flat = C.flatten()
-C_flat[np.isinf(C_flat)] = 1e6
+def offline_loss(y_true, y_pred):
+    """
+    Computes the offline loss for a predicted path in a graph.
+
+    This function calculates the loss based on the predicted arc values, ensuring
+    constraints for path cost, outgoing edges, incoming edges, and binary values are
+    maintained. It applies penalties to deviations from these constraints, aiming to
+    optimize the path in terms of cost and validity.
+
+    Args:
+        y_true: Ground truth values (not utilized in this computation).
+        y_pred: Predicted values, containing arc values for the graph.
+
+    Returns:
+        tf.Tensor: The computed loss value as a TensorFlow tensor.
+    """
+    arc_values = y_pred[:, :n * n]
+    # Path cost
+    term1 = tf.reduce_sum(C_flat * arc_values)
+    # Outgoing edge constraint
+    row_sums = tf.reduce_sum(tf.reshape(arc_values, (-1, n, n)), axis=2) - 1
+    term2 = tf.reduce_sum(tf.square(row_sums))
+    # Incoming edge constraint
+    col_sums = tf.reduce_sum(tf.reshape(arc_values, (-1, n, n)), axis=1) - 1
+    term3 = tf.reduce_sum(tf.square(col_sums))
+    # Binary values constraint
+    term4 = tf.reduce_sum(arc_values * (1 - arc_values))
+    loss = term1 + 10 * term2 + 10 * term3 + 10 * term4
+    return loss
 
 # Create input vector with source and destination nodes
 def create_input_vector(C_flat, origin, destination, n):
@@ -57,6 +78,16 @@ def energy_loss_with_input_vectors(y_true, y_pred):
     term6 = tf.reduce_sum(tf.square(dest_constraint))
     loss = term1 + 10 * term2 + 10 * term3 + 10 * term4 + 10 * term5 + 10 * term6
     return loss
+
+# Load pre-trained offline model
+offline_model = tf.keras.models.load_model('../models/offline_model.h5',
+                                           custom_objects={'offline_loss': offline_loss})
+
+# Load cost matrix
+C = np.load('../data/cost_matrix.npy')  
+n = C.shape[0]
+C_flat = C.flatten()
+C_flat[np.isinf(C_flat)] = 1e6
 
 # Define full model for fine-tuning
 input_dim = len(C_flat) + 2 * n
