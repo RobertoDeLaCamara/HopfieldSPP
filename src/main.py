@@ -15,20 +15,13 @@ async def learn_network(file: UploadFile = File(...)):
     """
     Loads a network from a CSV file.
     """
-    
-    #TODO: remove this section when model is ready
-
-
-
     global graph
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are supported.")
     
     try:
-        #TODO: change this section when model is ready
         # Load the CSV file into a pandas DataFrame
-        #df = pd.read_csv(file.file)
-        pd.read_csv('../data/synthetic/synthetic_network.csv')
+        df = pd.read_csv(file.file)
 
         # Validate the DataFrame has the required columns
         if not {"source", "target", "weight"}.issubset(df.columns):
