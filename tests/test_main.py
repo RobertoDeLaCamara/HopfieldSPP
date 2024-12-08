@@ -22,6 +22,15 @@ def test_learn_network(sample_csv):
     assert response.status_code == 200
     assert response.json() == {"message": "Network loaded successfully", "status": "success"}
 
+def test_learn_network_from_file():
+    """Test the /learnNetwork endpoint with a file."""
+    file_path = os.path.join(os.path.dirname(__file__), "../data/synthetic/synthetic_network.csv")
+    with open(file_path, "rb") as file:
+        response = client.post("/learnNetwork", files={"file": file})
+    assert response.status_code == 200
+    assert response.json() == {"message": "Network loaded successfully", "status": "success"}
+    
+
 def test_calculate_shortest_path(sample_csv):
     """Test the /calculateShortestPath endpoint."""
     # Load the network first
