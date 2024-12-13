@@ -33,7 +33,7 @@ async def load_network(file: UploadFile = File(...)):
         # Create a graph using NetworkX
         graph = nx.Graph()
         for _, row in df.iterrows():
-            graph.add_edge(row["origina"], row["destination"], weight=row["weight"])
+            graph.add_edge(row["origin"], row["destination"], weight=row["weight"])
 
         return {"message": "Network loaded successfully", "status": "success"}
     except Exception as e:
