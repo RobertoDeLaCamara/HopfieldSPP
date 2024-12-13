@@ -24,16 +24,16 @@ async def load_network(file: UploadFile = File(...)):
         df = pd.read_csv(file.file)
 
         # Validate the DataFrame has the required columns
-        if not {"source", "target", "weight"}.issubset(df.columns):
+        if not {"origin", "destination", "weight"}.issubset(df.columns):
             raise HTTPException(
                 status_code=400,
-                detail="CSV must contain 'source', 'target', and 'weight' columns."
+                detail="CSV must contain 'origin', 'destination', and 'weight' columns."
             )
 
         # Create a graph using NetworkX
         graph = nx.Graph()
         for _, row in df.iterrows():
-            graph.add_edge(row["source"], row["target"], weight=row["weight"])
+            graph.add_edge(row["origina"], row["destination"], weight=row["weight"])
 
         return {"message": "Network loaded successfully", "status": "success"}
     except Exception as e:
