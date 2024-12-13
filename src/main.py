@@ -10,8 +10,8 @@ app = FastAPI()
 # In-memory graph storage
 graph = None
 
-@app.post("/learnNetwork")
-async def learn_network(file: UploadFile = File(...)):
+@app.post("/loadNetwork")
+async def load_network(file: UploadFile = File(...)):
     """
     Loads a network from a CSV file.
     """
