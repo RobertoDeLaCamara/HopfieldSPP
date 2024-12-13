@@ -10,7 +10,7 @@ client = TestClient(app)
 @pytest.fixture
 def sample_csv(tmpdir):
     """Creates a temporary CSV file for testing."""
-    csv_content = "source,target,weight\nA,B,1\nB,C,2\nC,D,1\nA,D,4"
+    csv_content = "origin,destination,weight\nA,B,1\nB,C,2\nC,D,1\nA,D,4"
     csv_file = tmpdir.join("network.csv")
     csv_file.write(csv_content)
     return csv_file
