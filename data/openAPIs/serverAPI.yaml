@@ -1,17 +1,17 @@
 openapi: 3.0.0
 info:
-  title: Network API
-  description: API para aprender redes desde un archivo y calcular la ruta más corta.
+  title: SPP Network API
+  description: API to load networks from a file and calculate the shortest path.
   version: 1.0.0
 servers:
-  - url: https://api.network.com/v1
-    description: Servidor principal
+  - url: https://api.hopfieldspp.com/v1
+    description: Main server
 
 paths:
   /learnNetwork:
     post:
-      summary: Cargar red desde archivo
-      description: Carga una red desde un archivo CSV y construye su representación interna.
+      summary: Load network from file
+      description: Loads a network from a CSV file and builds its internal representation.
       operationId: learnNetwork
       requestBody:
         required: true
@@ -23,10 +23,10 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Archivo CSV que contiene los datos de la red.
+                  description: CSV file containing the network data.
       responses:
         '200':
-          description: Red cargada con éxito
+          description: Network successfully loaded
           content:
             application/json:
               schema:
@@ -34,36 +34,36 @@ paths:
                 properties:
                   message:
                     type: string
-                    description: Mensaje de confirmación
+                    description: Confirmation message
                   status:
                     type: string
                     enum: [success, error]
         '400':
-          description: Error en la solicitud
+          description: Bad request
         '500':
-          description: Error interno del servidor
+          description: Internal server error
 
   /calculateShortestPath:
     get:
-      summary: Calcular ruta más corta
-      description: Calcula la ruta más corta entre dos nodos dados.
+      summary: Calculate shortest path
+      description: Calculates the shortest path between two given nodes.
       operationId: calculateShortestPath
       parameters:
         - name: origin
           in: query
           required: true
-          description: Nodo de origen
+          description: Origin node
           schema:
             type: string
         - name: destination
           in: query
           required: true
-          description: Nodo de destino
+          description: Destination node
           schema:
             type: string
       responses:
         '200':
-          description: Ruta calculada con éxito
+          description: Shortest path successfully calculated
           content:
             application/json:
               schema:
@@ -73,13 +73,13 @@ paths:
                     type: array
                     items:
                       type: string
-                    description: Lista de nodos en la ruta más corta
+                    description: List of nodes in the shortest path
                   distance:
                     type: number
-                    description: Distancia total de la ruta
+                    description: Total distance of the path
         '400':
-          description: Parámetros inválidos
+          description: Invalid parameters
         '404':
-          description: Ruta no encontrada
+          description: Path not found
         '500':
-          description: Error interno del servidor
+          description: Internal server error

@@ -42,6 +42,17 @@ def test_calculate_shortest_path(sample_csv):
     assert response.status_code == 200
     assert response.json() == {"path": ["A", "D"], "distance": 4}
 
+def test_calculate_shortest_path_synthetic_network():
+    """Test the /calculateShortestPath endpoint with a synthetic network."""
+    file_path = os.path.join(os.path.dirname(__file__), "../data/synthetic/synthetic_network.csv")
+    with open(file_path, "rb") as file:
+        client.post("/loadNetwork", files={"file": file})
+
+    response = client.get("/calculateShortestPath?origin=1&destination=3")
+    print(response.json())
+    assert response.status_code == 200
+    assert response.json() == {"path": ["1", "2", "3", "5"], "distance": 3} 
+
 def test_shortest_path_no_network():
     """Test shortest path when network is not loaded."""
     response = client.get("/calculateShortestPath?origin=A&destination=D")

@@ -1,0 +1,48 @@
+# Exclude Python cache files and directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude virtual environments
+venv/
+env/
+.venv/
+
+# Exclude version control files
+.git/
+.gitignore
+
+# Exclude test files and directories
+tests/
+*.test.py
+
+# Exclude editor/IDE configuration files
+.vscode/
+.idea/
+*.swp
+
+# Exclude local configuration files
+*.env
+.env.*
+config.yaml
+
+# Exclude Docker-specific files not needed in the image
+Dockerfile
+.dockerignore
+
+# Exclude unnecessary files
+*.log
+*.bak
+*.tmp
+*.DS_Store
+thumbs.db
+
+# Exclude large files that are not needed in the image
+*.tar.gz
+*.zip
+*.rar
+*.7z
+node_modules/
+dist/
+build/
