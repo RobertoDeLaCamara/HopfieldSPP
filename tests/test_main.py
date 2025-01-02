@@ -51,7 +51,7 @@ def test_calculate_shortest_path_synthetic_network():
     response = client.get("/calculateShortestPath?origin=1&destination=3")
     print(response.json())
     assert response.status_code == 200
-    assert response.json() == {"path": ["1", "2", "3", "5"], "distance": 3} 
+    assert response.json() == {"path": ["1", "48", "15", "29", "3"], "distance": 169} 
 
 def test_shortest_path_no_network():
     """Test shortest path when network is not loaded."""

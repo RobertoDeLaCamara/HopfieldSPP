@@ -61,62 +61,32 @@ def calculate_cost_matrix(adjacency_matrix):
             exit()
     return cost_matrix
 
-def train_offline_model(adjacency_matrix):
-    """
-    Trains a Hopfield Neural Network model to solve the shortest path problem using a given distance matrix.
-    The function performs the following steps:
-    1. Loads, normalizes, and flattens the distance matrix, assigning large values to infinity values.
-    2. Defines a custom HopfieldLayer class that computes the energy of the network and fine-tunes the state matrix with constraints.
-    3. Integrates the custom HopfieldLayer with a Keras model (HopfieldModel) and defines custom training and prediction logic.
-    4. Compiles and trains the model to minimize the energy function.
-    5. Saves the trained model to a specified file path.
-    Args:
-        adjacency_matrix (str): The path to the CSV file containing the adjacency matrix.
-    Returns:
-        None
-    """
-    cost_matrix = calculate_cost_matrix(adjacency_matrix)
-    # Load, normalize and flatten the distance matrix, assigning a large value to infinity values
-    cost_matrix = np.array(df.pivot(index='origin', columns='destination', values='weight').fillna(1e6))
-    cost_matrix[cost_matrix == np.inf] = 1e12
-    cost_matrix_normalized = (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
-    cost_matrix_flat = cost_matrix_normalized.flatten()
-    distance_matrix = cost_matrix_flat
-
-    # Number of nodes
-    n = distance_matrix.shape[0]
-    
-    # Hyperparameters (weights for energy terms)
-    mu1 = 1.0
-    mu2 = 10.0
-    mu3 = 10.0
-
-    # Define the Hopfield Neural Network layer
-    @register_keras_serializable()
-    class HopfieldLayer(Layer):
-        def __init__(self, n, distance_matrix, **kwargs):
-            '''
-            Initializes the HopfieldLayer.
-        
-            Args:
-                n (int): Number of nodes in the graph.
-                distance_matrix (numpy array): Distance matrix of the graph.
-                **kwargs: Additional keyword arguments for the parent class.
-            '''
-            super(HopfieldLayer, self).__init__(**kwargs)
-            self.n = n
-            self.distance_matrix = tf.constant(distance_matrix, dtype=tf.float32)
-            self.x = self.add_weight(
-                name="x", 
-                shape=(n, n), 
-                initializer="random_uniform", 
-                trainable=True
-            )
-            self.optimizer = tf.optimizers.Adam(learning_rate=0.01)
-            # Valid arcs
-            self.valid_arcs = tf.constant((self.distance_matrix.numpy() != 0).astype(np.float32), dtype=tf.float32)
+# Define the Hopfield Neural Network layer
+@register_keras_serializable()
+class HopfieldLayer(Layer):
+    def __init__(self, n, distance_matrix, **kwargs):
+        '''
+        Initializes the HopfieldLayer.
+            
+        Args:
+            n (int): Number of nodes in the graph.
+            distance_matrix (numpy array): Distance matrix of the graph.
+            **kwargs: Additional keyword arguments for the parent class.
+        '''
+        super(HopfieldLayer, self).__init__(**kwargs)
+        self.n = n
+        self.distance_matrix = tf.constant(distance_matrix, dtype=tf.float32)
+        self.x = self.add_weight(
+            name="x", 
+            shape=(n, n), 
+            initializer="random_uniform", 
+            trainable=True
+        )
+        self.optimizer = tf.optimizers.Adam(learning_rate=0.01)
+        # Valid arcs
+        self.valid_arcs = tf.constant((self.distance_matrix.numpy() != 0).astype(np.float32), dtype=tf.float32)
                                          
-        def energy(self):
+    def energy(self):
             '''
             Computes the energy of the network, which is a function of the path cost, row and column constraints, binary constraint, and invalid arcs penalty.
             
@@ -130,6 +100,11 @@ def train_offline_model(adjacency_matrix):
             
             The energy is used to fine-tune the state matrix with constraints.
             '''
+             # Hyperparameters (weights for energy terms)
+            mu1 = 1.0
+            mu2 = 10.0
+            mu3 = 10.0
+            
             path_cost = tf.reduce_sum(self.distance_matrix * self.x)
             row_constraint = tf.reduce_sum(tf.square(tf.reduce_sum(self.x, axis=1) - 1))
             col_constraint = tf.reduce_sum(tf.square(tf.reduce_sum(self.x, axis=0) - 1))
@@ -137,7 +112,7 @@ def train_offline_model(adjacency_matrix):
             invalid_arcs_penalty = tf.reduce_sum(tf.square(self.x * (1 - self.valid_arcs)))
             return (mu1/2)*path_cost + (mu2/2)*row_constraint + (mu2/2)*col_constraint + (mu3/2)*binary_constraint + 1000*invalid_arcs_penalty	
             
-        def fine_tune_with_constraints(self, source, destination, iterations=500):
+    def fine_tune_with_constraints(self, source, destination, iterations=500):
             '''
             Fine-tunes the state matrix with constraints, given a source and destination node, over a specified number of iterations.
             
@@ -168,13 +143,13 @@ def train_offline_model(adjacency_matrix):
             print("Final Energy:", self.energy().numpy())
             return self.x
     
-        def call(self, inputs, training=False):
+    def call(self, inputs, training=False):
             return self.x
     
-        def compile(self, optimizer):
+    def compile(self, optimizer):
             super(HopfieldLayer, self).compile()
         
-        def get_config(self):
+    def get_config(self):
             config = super(HopfieldLayer, self).get_config()
             config.update({
                 'n': self.n,
@@ -184,8 +159,8 @@ def train_offline_model(adjacency_matrix):
             })
             return config
 
-        @classmethod
-        def from_config(cls, config):
+    @classmethod
+    def from_config(cls, config):
             x = config.pop('x')
             distance_matrix = config.pop('distance_matrix')
             instance = cls(distance_matrix=distance_matrix, **config)
@@ -194,10 +169,10 @@ def train_offline_model(adjacency_matrix):
             instance.valid_arcs.assign(tf.constant(valid_arcs, dtype=tf.float32))  # Restore self.valid_arcs from the configuration
             return instance
 
-    #Integrate custom HopfieldLayer with Keras model
-    @register_keras_serializable()
-    class HopfieldModel(Model):
-        def __init__(self, n, distance_matrix, **kwargs):
+#Integrate custom HopfieldLayer with Keras model
+@register_keras_serializable()
+class HopfieldModel(Model):
+    def __init__(self, n, distance_matrix, **kwargs):
             '''
             Initializes the HopfieldModel.
 
@@ -210,7 +185,7 @@ def train_offline_model(adjacency_matrix):
             self.hopfield_layer = HopfieldLayer(n, distance_matrix)
             self.optimizer = tf.optimizers.Adam(learning_rate=0.01)
 
-        def train_step(self, data):
+    def train_step(self, data):
             # Custom training logic
             """
             Performs a single training step for the HopfieldModel.
@@ -235,11 +210,11 @@ def train_offline_model(adjacency_matrix):
             # Return the loss
             return {"loss": loss}
     
-        def call(self, inputs, training=False):
+    def call(self, inputs, training=False):
             # Forward pass
             return self.hopfield_layer(inputs, training=training)
     
-        def predict(self,source,destination):
+    def predict(self,source,destination):
             '''
             Predicts the shortest path from a source node to a destination node using the Hopfield network.
 
@@ -275,7 +250,7 @@ def train_offline_model(adjacency_matrix):
             # Extract and return the predicted path
             return extract_path(state_matrix)
        
-        def get_config(self):
+    def get_config(self):
             config = super(HopfieldModel, self).get_config()
             config.update({
                 'n': self.hopfield_layer.n,
@@ -283,14 +258,42 @@ def train_offline_model(adjacency_matrix):
             })
             return config
 
-        @classmethod
-        def from_config(cls, config):
+    @classmethod
+    def from_config(cls, config):
             return cls(**config)
-                 
+
+def train_offline_model(adjacency_matrix):
+    """
+    Trains a Hopfield Neural Network model to solve the shortest path problem using a given distance matrix.
+    The function performs the following steps:
+    1. Loads, normalizes, and flattens the distance matrix, assigning large values to infinity values.
+    2. Defines a custom HopfieldLayer class that computes the energy of the network and fine-tunes the state matrix with constraints.
+    3. Integrates the custom HopfieldLayer with a Keras model (HopfieldModel) and defines custom training and prediction logic.
+    4. Compiles and trains the model to minimize the energy function.
+    5. Saves the trained model to a specified file path.
+    Args:
+        adjacency_matrix (str): The path to the CSV file containing the adjacency matrix.
+    Returns:
+        None
+    """
+    cost_matrix = calculate_cost_matrix(adjacency_matrix)
+    df = pd.read_csv(adjacency_matrix)
+    # Load, normalize and flatten the distance matrix, assigning a large value to infinity values
+    cost_matrix = np.array(df.pivot(index='origin', columns='destination', values='weight').fillna(1e6))
+    cost_matrix[cost_matrix == np.inf] = 1e12
+    cost_matrix_normalized = (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
+    cost_matrix_flat = cost_matrix_normalized.flatten()
+    distance_matrix = cost_matrix_flat
+
+    # Number of nodes
+    n = distance_matrix.shape[0]
+                     
     # Create the model
     model = HopfieldModel(n, distance_matrix)
     # Compile the model with a custom optimizer
+    print("Compiling the model...")
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01))
+    print("Model compiled.")
 
     # Ensure distance_matrix is a valid tensor and reshape it to match the expected input shape
     m = int(sqrt(n))
