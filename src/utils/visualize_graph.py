@@ -5,45 +5,45 @@ import matplotlib.pyplot as plt
 
 def visualize_graph(df):
     """
-    Visualiza una red representada en un DataFrame como un grafo.
+    Visualize a network represented in a DataFrame as a graph.
     
-    El grafo se dibuja utilizando un layout automático para mejorar la visualización.
-    Los nodos se dibujan como rectángulos azules, los arcos se dibujan como líneas negras y los
-    pesos de los arcos se dibujan como etiquetas rojas.
+    The graph is drawn using an automatic layout to improve visualization.
+    Nodes are drawn as blue rectangles, edges are drawn as black lines, and
+    edge weights are drawn as red labels.
     
     Args:
-        df (pd.DataFrame): DataFrame con columnas ['origen', 'destino', 'costo'].
+        df (pd.DataFrame): DataFrame with columns ['source', 'target', 'weight'].
     """
-    # Verificar que df no sea None ni tenga filas vacías
+    # Check that df is not None and does not have empty rows
     if df is None or df.empty:
-        raise ValueError("El DataFrame no puede ser None ni estar vacío")
+        raise ValueError("The DataFrame cannot be None or empty")
     
-    # Verificar que el DataFrame tenga las columnas necesarias
-    for col in ['origen', 'destino', 'costo']:
+    # Check that the DataFrame has the necessary columns
+    for col in ['source', 'target', 'weight']:
         if col not in df.columns:
-            raise ValueError(f"El DataFrame debe tener la columna '{col}'")
+            raise ValueError(f"The DataFrame must have the column '{col}'")
     
-    # Verificar que no haya filas con valores nulos
+    # Check that there are no rows with null values
     if df.isnull().any().any():
-        raise ValueError("El DataFrame no puede tener valores nulos")
+        raise ValueError("The DataFrame cannot have null values")
     
-    # Crear un grafo dirigido
+    # Create a directed graph
     G = nx.DiGraph()
     
-    # Añadir arcos y sus costos
+    # Add edges and their weights
     G.add_weighted_edges_from(df.values.tolist())
     
-    # Obtener las posiciones de los nodos utilizando un layout
-    # El layout 'spring' es una buena opción para redes con un número moderado de nodos
+    # Get node positions using a layout
+    # The 'spring' layout is a good option for networks with a moderate number of nodes
     pos = nx.spring_layout(G)
     
-    # Dibujar nodos y arcos
+    # Draw nodes and edges
     nx.draw(G, pos, with_labels=True, node_size=700, node_color='lightblue', font_size=10, font_weight='bold')
     
-    # Extraer pesos para etiquetar los arcos
+    # Extract weights to label the edges
     edge_labels = nx.get_edge_attributes(G, 'weight')
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8, font_color='red')
     
-    # Mostrar el grafo
-    plt.title("Red")
+    # Show the graph
+    plt.title("Network")
     plt.show()

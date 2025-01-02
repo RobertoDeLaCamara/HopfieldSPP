@@ -20,7 +20,7 @@ def calculate_cost_matrix(adjacency_matrix):
     matrix is set to 0, representing the cost of going from a node to itself.
 
     Args:
-        csv_file_path (str): The path to the CSV file containing the adjacency matrix.
+        adjacency_matrix (str): The path to the CSV file containing the adjacency matrix.
     Returns:
         cost_matrix: A 2D numpy array representing the cost matrix.
 
@@ -61,7 +61,7 @@ def calculate_cost_matrix(adjacency_matrix):
             exit()
     return cost_matrix
 
-def train_offline_model():
+def train_offline_model(adjacency_matrix):
     """
     Trains a Hopfield Neural Network model to solve the shortest path problem using a given distance matrix.
     The function performs the following steps:
@@ -70,10 +70,12 @@ def train_offline_model():
     3. Integrates the custom HopfieldLayer with a Keras model (HopfieldModel) and defines custom training and prediction logic.
     4. Compiles and trains the model to minimize the energy function.
     5. Saves the trained model to a specified file path.
+    Args:
+        adjacency_matrix (str): The path to the CSV file containing the adjacency matrix.
     Returns:
         None
     """
-    cost_matrix = calculate_cost_matrix()
+    cost_matrix = calculate_cost_matrix(adjacency_matrix)
     # Load, normalize and flatten the distance matrix, assigning a large value to infinity values
     cost_matrix = np.array(df.pivot(index='origin', columns='destination', values='weight').fillna(1e6))
     cost_matrix[cost_matrix == np.inf] = 1e12
