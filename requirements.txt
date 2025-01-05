@@ -1,3 +1,9 @@
 fastapi
 uvicorn
 python-multipart
+tensorflow
+numpy
+pydantic
+pandas
+matplotlib
+networkx
