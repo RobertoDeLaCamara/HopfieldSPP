@@ -12,4 +12,4 @@ def calculate_shortest_path(origin, destination):
             to the destination. The "distance" key contains the total cost of the
             shortest path.
     """
-    
+    # TODO: implement the calculate_shortest_path function here using the predict method of the trained model
