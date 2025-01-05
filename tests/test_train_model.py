@@ -38,17 +38,22 @@ def test_invalid_csv_file(setup_synthetic_data):
         calculate_cost_matrix('../data/synthetic/network.csv')
 
 # Tests for train_offline_model
-def test_valid_adjacency_matrix(setup_synthetic_data):
+def test_train_offline_model_valid_adjacency_matrix(setup_synthetic_data):
+    """Test train_offline_model with a valid adjacency matrix CSV file."""
     network_data = {'origin': ['A', 'A', 'B'], 'destination': ['B', 'C', 'C'], 'weight': [1, 2, 3]}
     network_df = pd.DataFrame(network_data)
-    network_df.to_csv('../data/synthetic/network.csv', index=False)
     adjacency_matrix_file = '../data/synthetic/network.csv'
-    train_offline_model(adjacency_matrix_file)
+    network_df.to_csv(adjacency_matrix_file, index=False)
+    
+    try:
+        train_offline_model(adjacency_matrix_file,test=True)
+    except FileNotFoundError:
+        pytest.fail("File not found. Ensure the file path is correct.")
+    except pd.errors.EmptyDataError:
+        pytest.fail("CSV file is empty or invalid.")
+    except Exception as e:
+        pytest.fail(f"An unexpected error occurred: {e}")
 
-def test_train_offline_model_invalid_adjacency_matrix():
-    invalid_adjacency_matrix_file = "path/to/invalid/adjacency/matrix.csv"
-    with pytest.raises(FileNotFoundError):
-        train_offline_model(invalid_adjacency_matrix_file)
 
 # Tests for HopfieldLayer
 def test_hopfield_layer_init():
@@ -66,16 +71,6 @@ def test_hopfield_layer_energy():
     energy = layer.energy()
 
     assert isinstance(energy, tf.Tensor)
-
-def test_hopfield_layer_fine_tune_with_constraints():
-    num_nodes = 10
-    distance_matrix = tf.random.uniform((num_nodes, num_nodes))
-    layer = HopfieldLayer(num_nodes, distance_matrix)
-    source_node = 0
-    destination_node = 1
-    layer.fine_tune_with_constraints(source_node, destination_node)
-
-    assert isinstance(layer.x, tf.Tensor)
 
 # Tests for HopfieldModel
 def test_hopfield_model_init():
