@@ -264,49 +264,39 @@ class HopfieldModel(Model):
     def from_config(cls, config):
         return cls(**config)
 
-def train_offline_model(adjacency_matrix):
+def train_offline_model(adjacency_matrix_path):
     """
     Trains a Hopfield Neural Network model to solve the shortest path problem using a given distance matrix.
-    The function performs the following steps:
-    1. Loads, normalizes, and flattens the distance matrix, assigning large values to infinity values.
-    2. Defines a custom HopfieldLayer class that computes the energy of the network and fine-tunes the state matrix with constraints.
-    3. Integrates the custom HopfieldLayer with a Keras model (HopfieldModel) and defines custom training and prediction logic.
-    4. Compiles and trains the model to minimize the energy function.
-    5. Saves the trained model to a specified file path.
+
     Args:
-        adjacency_matrix (str): The path to the CSV file containing the adjacency matrix.
+        adjacency_matrix_path (str): The path to the CSV file containing the adjacency matrix.
     Returns:
         None
     """
-    cost_matrix = calculate_cost_matrix(adjacency_matrix)
-    df = pd.read_csv(adjacency_matrix)
-    # Load, normalize and flatten the distance matrix, assigning a large value to infinity values
+    print("Training offline model")
+    # Load and validate adjacency matrix
+    df = pd.read_csv(adjacency_matrix_path)
+    if df.empty:
+        raise ValueError("Adjacency matrix file is empty or invalid")
+    print("Calculating cost matrix")
+    # Create and normalize cost matrix
     cost_matrix = np.array(df.pivot(index='origin', columns='destination', values='weight').fillna(1e6))
     cost_matrix[cost_matrix == np.inf] = 1e12
     cost_matrix_normalized = (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
-    cost_matrix_flat = cost_matrix_normalized.flatten()
-    distance_matrix = cost_matrix_flat
+    distance_matrix = cost_matrix_normalized.flatten()
 
-    # Number of nodes
-    n = distance_matrix.shape[0]
-                     
-    # Create the model
-    model = HopfieldModel(n, distance_matrix)
-    # Compile the model with a custom optimizer
-    print("Compiling the model...")
+    # Initialize and compile the model
+    num_nodes = distance_matrix.shape[0]
+    model = HopfieldModel(num_nodes, distance_matrix)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01))
-    print("Model compiled.")
 
-    # Ensure distance_matrix is a valid tensor and reshape it to match the expected input shape
-    m = int(sqrt(n))
+    # Prepare tensors for training
+    matrix_size = int(sqrt(num_nodes))
     distance_matrix_tensor = tf.constant(distance_matrix, dtype=tf.float32)
-    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (m, m))  
-    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (1, m, m))  
-    # Create dummy target data as it is required by the fit method
-    dummy_target = tf.zeros((1, n, n), dtype=tf.float32)
-    # Train the model to minimize the energy function
+    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (1, matrix_size, matrix_size))
+    dummy_target = tf.zeros((1, num_nodes, num_nodes), dtype=tf.float32)
+
+    # Train and save the model
     model(dummy_target)
     model.fit(dummy_target, epochs=1000)
-    model.summary()
-    # Save the trained model
     model.save("../models/trained_model_without_source_dest.keras")
