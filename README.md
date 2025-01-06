@@ -66,26 +66,23 @@ $$
   - $\mu_3$: Controls the binariness of the variables. 
 
 ---
-
 ## Source and destination node restrictions
 
-**Term 5: Source Node Constraint**
-
-$
+### Term 5: Source Node Constraint
+$$
 \left( \sum_{j=1}^n x_{s,j} - 1 \right)^2
-$
+$$
+- **Variables**:
+  - $x_{s,j}$: Binary decision variable for the edge from source node $s$ to node $j$.
+- **Purpose**: Ensures that the source node $s$ has exactly one outgoing edge.
 
-- $x_{s,j}$: Binary decision variable for the edge from source node $s$ to node $j$.
-- Ensures that the source node $s$ has exactly one outgoing edge.
-
-**Term 6: Destination Node Constraint**
-
-$
+### Term 6: Destination Node Constraint
+$$
 \left( \sum_{i=1}^n x_{i,d} - 1 \right)^2
-$
-
-- $ x_{i,d} $: Binary decision variable for the edge from node $ i $ to the destination node $ d $.
-- Ensures that the destination node $ d $ has exactly one incoming edge.
+$$
+- **Variables**:
+  - $x_{i,d}$: Binary decision variable for the edge from node $i$ to the destination node $d$.
+- **Purpose**: Ensures that the destination node $d$ has exactly one incoming edge.
 
 ## Summary
 The Energy Function combines **strong** (like path validity) and **weak** (like cost minimization and binariness) constraints to: 
