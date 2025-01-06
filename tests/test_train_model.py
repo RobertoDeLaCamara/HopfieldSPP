@@ -46,7 +46,7 @@ def test_train_offline_model_valid_adjacency_matrix(setup_synthetic_data):
     network_df.to_csv(adjacency_matrix_file, index=False)
     
     try:
-        train_offline_model(adjacency_matrix_file,test=True)
+        train_offline_model(adjacency_matrix_file)
     except FileNotFoundError:
         pytest.fail("File not found. Ensure the file path is correct.")
     except pd.errors.EmptyDataError:
