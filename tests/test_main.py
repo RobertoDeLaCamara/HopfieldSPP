@@ -11,7 +11,7 @@ client = TestClient(app)
 def sample_csv(tmpdir):
     """Creates a temporary CSV file for testing."""
     csv_content = "origin,destination,weight\nA,B,1\nB,C,2\nC,D,1\nA,D,4"
-    csv_file = tmpdir.join("network.csv")
+    csv_file = tmpdir.join("test_network.csv")
     csv_file.write(csv_content)
     return csv_file
 
@@ -24,7 +24,7 @@ def test_load_network(sample_csv):
 
 def test_load_network_from_file():
     """Test the /loadNetwork endpoint with a file."""
-    file_path = os.path.join(os.path.dirname(__file__), "../data/synthetic/synthetic_network.csv")
+    file_path = os.path.join(os.path.dirname(__file__), "../data/synthetic/synthetic_test_network.csv")
     with open(file_path, "rb") as file:
         response = client.post("/loadNetwork", files={"file": file})
     assert response.status_code == 200
@@ -44,7 +44,7 @@ def test_calculate_shortest_path(sample_csv):
 
 def test_calculate_shortest_path_synthetic_network():
     """Test the /calculateShortestPath endpoint with a synthetic network."""
-    file_path = os.path.join(os.path.dirname(__file__), "../data/synthetic/synthetic_network.csv")
+    file_path = os.path.join(os.path.dirname(__file__), "../data/synthetic/synthetic_test_network.csv")
     with open(file_path, "rb") as file:
         client.post("/loadNetwork", files={"file": file})
 

@@ -59,6 +59,8 @@ def calculate_cost_matrix(adjacency_matrix):
         except ValueError:
             print(f"Error: Invalid cost value on row {_}.")
             exit()
+    # Save the cost matrix to a file
+    np.savetxt('../data/synthetic/cost_matrix.csv', cost_matrix, delimiter=',')   
     return cost_matrix
 
 # Define the Hopfield Neural Network layer
@@ -173,94 +175,94 @@ class HopfieldLayer(Layer):
 @register_keras_serializable()
 class HopfieldModel(Model):
     def __init__(self, n, distance_matrix, **kwargs):
-            '''
-            Initializes the HopfieldModel.
+        '''
+        Initializes the HopfieldModel.
 
-            Args:
-                n (int): Number of nodes in the graph.
-                distance_matrix (numpy array): Distance matrix of the graph.
-                **kwargs: Additional keyword arguments for the parent class.
-            '''
-            super(HopfieldModel, self).__init__(**kwargs)
-            self.hopfield_layer = HopfieldLayer(n, distance_matrix)
-            self.optimizer = tf.optimizers.Adam(learning_rate=0.01)
+        Args:
+            n (int): Number of nodes in the graph.
+            distance_matrix (numpy array): Distance matrix of the graph.
+            **kwargs: Additional keyword arguments for the parent class.
+        '''
+        super(HopfieldModel, self).__init__(**kwargs)
+        self.hopfield_layer = HopfieldLayer(n, distance_matrix)
+        self.optimizer = tf.optimizers.Adam(learning_rate=0.01)
 
     def train_step(self, data):
-            # Custom training logic
-            """
-            Performs a single training step for the HopfieldModel.
+        # Custom training logic
+        """
+        Performs a single training step for the HopfieldModel.
 
-            This method utilizes TensorFlow's `GradientTape` to compute gradients of the energy function,
-            which serves as the loss, with respect to the model's trainable variables. The computed gradients
-            are then used to update the model's parameters via the optimizer.
+        This method utilizes TensorFlow's `GradientTape` to compute gradients of the energy function,
+        which serves as the loss, with respect to the model's trainable variables. The computed gradients
+        are then used to update the model's parameters via the optimizer.
 
-            Args:
-                data: Unused in this implementation, but typically a batch of input data.
+        Args:
+            data: Unused in this implementation, but typically a batch of input data.
 
-            Returns:
-                A dictionary containing the loss value under the key "loss".
-            """
+        Returns:
+            A dictionary containing the loss value under the key "loss".
+        """
 
-            with tf.GradientTape() as tape:
-                # Compute the energy as the loss
-                loss = self.hopfield_layer.energy()
-            # Compute gradients and apply updates
-            gradients = tape.gradient(loss, self.trainable_variables)
-            self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-            # Return the loss
-            return {"loss": loss}
+        with tf.GradientTape() as tape:
+            # Compute the energy as the loss
+            loss = self.hopfield_layer.energy()
+        # Compute gradients and apply updates
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        # Return the loss
+        return {"loss": loss}
     
     def call(self, inputs, training=False):
-            # Forward pass
-            return self.hopfield_layer(inputs, training=training)
+        # Forward pass
+        return self.hopfield_layer(inputs, training=training)
     
     def predict(self,source,destination):
-            '''
-            Predicts the shortest path from a source node to a destination node using the Hopfield network.
+        '''
+        Predicts the shortest path from a source node to a destination node using the Hopfield network.
 
-            The method first fine-tunes the state matrix with constraints using the source and destination nodes. The optimized state matrix is then used to extract the shortest path by starting from the source node and iteratively finding the next node with the highest probability of being part of the shortest path.
+        The method first fine-tunes the state matrix with constraints using the source and destination nodes. The optimized state matrix is then used to extract the shortest path by starting from the source node and iteratively finding the next node with the highest probability of being part of the shortest path.
 
-            Args:
-                source (int): The source node.
-                destination (int): The destination node.
+        Args:
+            source (int): The source node.
+            destination (int): The destination node.
 
-            Returns:
-                A list of node indices representing the shortest path from the source node to the destination node.
-            '''
-            self.hopfield_layer.fine_tune_with_constraints(source, destination)
-            # Retrieve the optimized state matrix
-            state_matrix = tf.round(self.hopfield_layer.x).numpy()
-            # Extract the shortest path based on the state matrix
-            def extract_path(state_matrix):
-                path = []
-                current_node = source
-                visited = set()
-                while current_node != destination:
-                    path.append(current_node)
-                    visited.add(current_node)
-                    # Find the next node
-                    next_node = np.argmax(state_matrix[current_node])
-                    if next_node in visited or next_node == destination:
-                        break
-                    current_node = next_node
+        Returns:
+            A list of node indices representing the shortest path from the source node to the destination node.
+        '''
+        self.hopfield_layer.fine_tune_with_constraints(source, destination)
+        # Retrieve the optimized state matrix
+        state_matrix = tf.round(self.hopfield_layer.x).numpy()
+        # Extract the shortest path based on the state matrix
+        def extract_path(state_matrix):
+            path = []
+            current_node = source
+            visited = set()
+            while current_node != destination:
+                path.append(current_node)
+                visited.add(current_node)
+                # Find the next node
+                next_node = np.argmax(state_matrix[current_node])
+                if next_node in visited or next_node == destination:
+                    break
+                current_node = next_node
 
-                path.append(destination)
-                return path
+            path.append(destination)
+            return path
 
-            # Extract and return the predicted path
-            return extract_path(state_matrix)
+        # Extract and return the predicted path
+        return extract_path(state_matrix)
        
     def get_config(self):
-            config = super(HopfieldModel, self).get_config()
-            config.update({
-                'n': self.hopfield_layer.n,
-                'distance_matrix': self.hopfield_layer.distance_matrix.numpy().tolist()
-            })
-            return config
+        config = super(HopfieldModel, self).get_config()
+        config.update({
+            'n': self.hopfield_layer.n,
+            'distance_matrix': self.hopfield_layer.distance_matrix.numpy().tolist()
+        })
+        return config
 
     @classmethod
     def from_config(cls, config):
-            return cls(**config)
+        return cls(**config)
 
 def train_offline_model(adjacency_matrix,test=False):
     """

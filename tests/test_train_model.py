@@ -16,33 +16,33 @@ def setup_synthetic_data():
 def test_valid_csv_file(setup_synthetic_data):
     data = {'origin': ['A', 'A', 'B'], 'destination': ['B', 'C', 'C'], 'weight': [1, 2, 3]}
     df = pd.DataFrame(data)
-    df.to_csv('../data/synthetic/network.csv', index=False)
+    df.to_csv('../data/synthetic/test_network.csv', index=False)
 
-    cost_matrix = calculate_cost_matrix('../data/synthetic/network.csv')
+    cost_matrix = calculate_cost_matrix('../data/synthetic/test_network.csv')
     expected_cost_matrix = np.array([[0, 1, 2], [np.inf, 0, 3], [np.inf, np.inf, 0]])
 
     np.testing.assert_array_equal(cost_matrix, expected_cost_matrix)
 
 def test_empty_csv_file(setup_synthetic_data):
-    open('../data/synthetic/network.csv', 'w').close()
+    open('../data/synthetic/test_network.csv', 'w').close()
 
     with pytest.raises(SystemExit):
-        calculate_cost_matrix('../data/synthetic/network.csv')
+        calculate_cost_matrix('../data/synthetic/test_network.csv')
 
 def test_invalid_csv_file(setup_synthetic_data):
     data = {'origin': ['A', 'A', 'B'], 'destination': ['B', 'C', 'C'], 'weight': [1, 'a', 3]}
     df = pd.DataFrame(data)
-    df.to_csv('../data/synthetic/network.csv', index=False)
+    df.to_csv('../data/synthetic/test_network.csv', index=False)
 
     with pytest.raises(SystemExit):
-        calculate_cost_matrix('../data/synthetic/network.csv')
+        calculate_cost_matrix('../data/synthetic/test_network.csv')
 
 # Tests for train_offline_model
 def test_train_offline_model_valid_adjacency_matrix(setup_synthetic_data):
     """Test train_offline_model with a valid adjacency matrix CSV file."""
     network_data = {'origin': ['A', 'A', 'B'], 'destination': ['B', 'C', 'C'], 'weight': [1, 2, 3]}
     network_df = pd.DataFrame(network_data)
-    adjacency_matrix_file = '../data/synthetic/network.csv'
+    adjacency_matrix_file = '../data/synthetic/test_network.csv'
     network_df.to_csv(adjacency_matrix_file, index=False)
     
     try:
