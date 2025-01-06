@@ -22,17 +22,17 @@ async def load_network(file: UploadFile = File(...)):
     Returns:
         dict: A dictionary containing a success message and status.
     '''
-    
+    print("Loading network")
     if file.content_type != "text/csv":
         raise HTTPException(status_code=400, detail="Only CSV files are supported.")
-
+    
     try:
         # Load the CSV file into a pandas DataFrame
         df = pd.read_csv(file.file, usecols=["origin", "destination", "weight"], dtype={"origin": str, "destination": str, "weight": float})
            
         #Create and train the neural model
         adjacency_matrix_file = file.file
-        train_offline_model(adjacency_matrix_file, test=False)
+        train_offline_model(adjacency_matrix_file)
        
         return {"message": "Network loaded successfully", "status": "success"}
     except Exception as e:

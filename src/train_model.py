@@ -264,7 +264,7 @@ class HopfieldModel(Model):
     def from_config(cls, config):
         return cls(**config)
 
-def train_offline_model(adjacency_matrix,test=False):
+def train_offline_model(adjacency_matrix):
     """
     Trains a Hopfield Neural Network model to solve the shortest path problem using a given distance matrix.
     The function performs the following steps:
@@ -309,5 +309,4 @@ def train_offline_model(adjacency_matrix,test=False):
     model.fit(dummy_target, epochs=1000)
     model.summary()
     # Save the trained model
-    if not test:
-        model.save("../models/trained_model_without_source_dest.keras")
+    model.save("../models/trained_model_without_source_dest.keras")
