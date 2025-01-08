@@ -279,6 +279,8 @@ def train_offline_model(adjacency_matrix_path):
     if df.empty:
         raise ValueError("Adjacency matrix file is empty or invalid")
     print("Calculating cost matrix")
+    cost_matrix = calculate_cost_matrix(adjacency_matrix_path)
+    
     # Create and normalize cost matrix
     cost_matrix = np.array(df.pivot(index='origin', columns='destination', values='weight').fillna(1e6))
     cost_matrix[cost_matrix == np.inf] = 1e12
@@ -286,15 +288,19 @@ def train_offline_model(adjacency_matrix_path):
     distance_matrix = cost_matrix_normalized.flatten()
 
     # Initialize and compile the model
-    num_nodes = distance_matrix.shape[0]
-    model = HopfieldModel(num_nodes, distance_matrix)
+    n = distance_matrix.shape[0]
+    print("Number of nodes:", n)
+    
+    model = HopfieldModel(n, distance_matrix)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01))
 
-    # Prepare tensors for training
-    matrix_size = int(sqrt(num_nodes))
+    # Ensure distance_matrix is a valid tensor and reshape it to match the expected input shape
+    m = int(sqrt(n))
     distance_matrix_tensor = tf.constant(distance_matrix, dtype=tf.float32)
-    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (1, matrix_size, matrix_size))
-    dummy_target = tf.zeros((1, num_nodes, num_nodes), dtype=tf.float32)
+    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (m, m))  
+    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (1, m, m))  
+    # Create dummy target data as it is required by the fit method
+    dummy_target = tf.zeros((1, n, n), dtype=tf.float32)
 
     # Train and save the model
     model(dummy_target)
