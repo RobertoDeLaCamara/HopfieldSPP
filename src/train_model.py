@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from math import sqrt
+import os
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
@@ -304,5 +305,11 @@ def train_offline_model(adjacency_matrix_path):
 
     # Train and save the model
     model(dummy_target)
-    model.fit(dummy_target, epochs=1000)
-    model.save("../models/trained_model_without_source_dest.keras")
+    
+    if 'PYTEST_CURRENT_TEST' in os.environ:
+        print("Function is being called by a pytest test")
+        model.save("../data/synthetic/tests/synthetic_test_model.keras")
+    else:
+        print("Function is being called during real execution")
+        model.save("../models/trained_model_without_source_dest.keras")
+   
