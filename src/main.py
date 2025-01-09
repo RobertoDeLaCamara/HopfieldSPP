@@ -22,21 +22,39 @@ async def load_network(file: UploadFile = File(...)):
     Returns:
         dict: A dictionary containing a success message and status.
     '''
+    
     print("Loading network")
-    if file is None or file.content_type is None or file.content_type != "text/csv":
+    
+    # Debug: Check the file content type and name
+    print(f"File name: {file.filename}")
+    print(f"File content type: {file.content_type}")
+
+    # Debug: Read the content of the file
+    try:
+        content = file.file.read()  # Read the file content
+        print(f"File content:\n{content.decode('utf-8')}")  # Decode for readability if it's text
+    except Exception as e:
+        print(f"Error reading file content: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error reading file content: {str(e)}")
+    finally:
+        # Reset the file pointer to the beginning for further use
+        file.file.seek(0)
+
+    # Continue with your normal processing logic
+    if file.content_type != "text/csv":
         raise HTTPException(status_code=400, detail="Only CSV files are supported.")
     
     try:
-        # Load the CSV file into a pandas DataFrame
-        df = pd.read_csv(file.file, usecols=["origin", "destination", "weight"], dtype={"origin": str, "destination": str, "weight": float})
-        
+        df = pd.read_csv(
+            file.file, usecols=["origin", "destination", "weight"],
+            dtype={"origin": str, "destination": str, "weight": float}
+        )
         if df.empty:
             raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")
+        
         print("Training model")
-        #Create and train the neural model
-        adjacency_matrix_file = file.file
-        train_offline_model(adjacency_matrix_file)
-       
+        # Dummy function to simulate model training
+        train_offline_model(file.file)
         return {"message": "Network loaded successfully", "status": "success"}
     except pd.errors.EmptyDataError:
         raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")
@@ -44,6 +62,7 @@ async def load_network(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Error parsing the CSV file: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing the file: {str(e)}")
+
 
 
 @app.get("/calculateShortestPath")
