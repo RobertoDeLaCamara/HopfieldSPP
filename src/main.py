@@ -53,8 +53,16 @@ async def load_network(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")
         
         print("Training model")
-        # Dummy function to simulate model training
-        train_offline_model(file.file)
+        # train_offline_model(file.file)
+        # Save the uploaded file to a temporary location
+        temp_file_path = f"/tmp/{file.filename}"
+        with open(temp_file_path, "wb") as temp_file:
+            temp_file.write(content)
+        print(f"File saved to {temp_file_path}")
+        # Train the model using the path to the temporary file
+        train_offline_model(temp_file_path)
+        # Optionally, remove the temporary file after processing
+        os.remove(temp_file_path)
         return {"message": "Network loaded successfully", "status": "success"}
     except pd.errors.EmptyDataError:
         raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")

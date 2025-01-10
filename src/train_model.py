@@ -265,7 +265,7 @@ class HopfieldModel(Model):
     def from_config(cls, config):
         return cls(**config)
 
-def train_offline_model(adjacency_matrix_path):
+def train_offline_model(adjacency_matrix_path: str) -> None:
     """
     Trains a Hopfield Neural Network model to solve the shortest path problem using a given distance matrix.
 
@@ -308,8 +308,14 @@ def train_offline_model(adjacency_matrix_path):
     
     if 'PYTEST_CURRENT_TEST' in os.environ:
         print("Function is being called by a pytest test")
-        model.save("../data/synthetic/tests/synthetic_test_model.keras")
+        model_save_path = "../data/synthetic/tests/synthetic_test_model.keras"
     else:
         print("Function is being called during real execution")
-        model.save("../models/trained_model_without_source_dest.keras")
+        model_save_path = "../models/trained_model_without_source_dest.keras"
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+    print("Saving model to:", model_save_path)  
+    # Save the model
+    model.save(model_save_path)
    
