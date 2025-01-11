@@ -81,11 +81,10 @@ async def calculate_shortest_path(
     """
     Calculates the shortest path between two nodes in the graph.
     """
-    
+    print(f"Calculating shortest path from {origin} to {destination}")
     try:
         # return calculate_shortest_path(graph, origin, destination
         return calculate_shortest_path(None, origin, destination)
-    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calculating the shortest path: {str(e)}")
 

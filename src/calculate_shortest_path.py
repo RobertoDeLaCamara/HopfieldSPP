@@ -37,6 +37,7 @@ def calculate_shortest_path(cost_matrix, origin, destination):
         ValueError: If cost_matrix, origin, or destination is None.
         RuntimeError: If the model prediction returns an empty path or if any error occurs during the calculation.
     """
+    print("Calculating the shortest path")
     if cost_matrix is None or origin is None or destination is None:
         raise ValueError("Cost matrix, origin, or destination cannot be None.")
 
