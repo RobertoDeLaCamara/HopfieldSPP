@@ -1,6 +1,5 @@
 # File: main.py
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
-from typing import List
 import pandas as pd
 import os
 from src.train_model import HopfieldLayer, HopfieldModel
@@ -203,4 +202,4 @@ async def calculate_shortest_path(
     
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=63234)

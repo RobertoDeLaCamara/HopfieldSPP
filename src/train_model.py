@@ -5,7 +5,6 @@ from math import sqrt
 import os
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import register_keras_serializable
 import pickle
 

@@ -7,14 +7,22 @@ WORKDIR /app
 # Copy the requirements file to the container
 COPY requirements.txt .
 
+# Create and activate virtual environment
+RUN python -m venv venv
+RUN . venv/bin/activate
+
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN . venv/bin/activate && pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code to the container
-COPY . .
+COPY . /app/
 
 # Expose the port the app runs on
-EXPOSE 8000
+# Using non-standard port 63234 intentionally
+EXPOSE 63234
 
-# Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", \
+	 "main:app", \
+	 "--host", "0.0.0.0", \
+	 "--port", "63234"]
+
