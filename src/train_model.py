@@ -7,6 +7,7 @@ from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import register_keras_serializable
+import pickle
 
 def calculate_cost_matrix(adjacency_matrix):   
     """
@@ -60,8 +61,6 @@ def calculate_cost_matrix(adjacency_matrix):
         except ValueError:
             print(f"Error: Invalid cost value on row {_}.")
             exit()
-    # Save the cost matrix to a file
-    np.savetxt('../data/synthetic/cost_matrix.csv', cost_matrix, delimiter=',')   
     return cost_matrix
 
 # Define the Hopfield Neural Network layer
@@ -187,7 +186,14 @@ class HopfieldModel(Model):
         super(HopfieldModel, self).__init__(**kwargs)
         self.hopfield_layer = HopfieldLayer(n, distance_matrix)
         self.optimizer = tf.optimizers.Adam(learning_rate=0.01)
+        self.cost_matrix = None
 
+    def set_cost_matrix(self, cost_matrix):
+        self.cost_matrix = cost_matrix
+        
+    def get_cost_matrix(self):
+        return self.cost_matrix
+    
     def train_step(self, data):
         # Custom training logic
         """
@@ -258,12 +264,14 @@ class HopfieldModel(Model):
         config.update({
             'n': self.hopfield_layer.n,
             'distance_matrix': self.hopfield_layer.distance_matrix.numpy().tolist()
+            
         })
         return config
 
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+    
 
 def train_offline_model(adjacency_matrix_path: str) -> None:
     """
@@ -275,12 +283,24 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
         None
     """
     print("Training offline model")
+    print(f"Adjacency matrix path: {adjacency_matrix_path}")
     # Load and validate adjacency matrix
-    df = pd.read_csv(adjacency_matrix_path)
-    if df.empty:
-        raise ValueError("Adjacency matrix file is empty or invalid")
+    try:
+        df = pd.read_csv(adjacency_matrix_path)
+        if df.empty:
+            raise ValueError("Adjacency matrix file is empty or invalid")
+    except Exception as e:
+        print(f"Error loading adjacency matrix: {str(e)}")
+        raise
+
     print("Calculating cost matrix")
-    cost_matrix = calculate_cost_matrix(adjacency_matrix_path)
+    try:
+        cost_matrix = calculate_cost_matrix(adjacency_matrix_path)
+        
+    except Exception as e:
+        print(f"Error calculating cost matrix: {str(e)}")
+        raise
+    
     
     # Create and normalize cost matrix
     cost_matrix = np.array(df.pivot(index='origin', columns='destination', values='weight').fillna(1e6))
@@ -292,7 +312,13 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
     n = distance_matrix.shape[0]
     print("Number of nodes:", n)
     
+    print("Creating model")
     model = HopfieldModel(n, distance_matrix)
+    print("Setting cost matrix")
+    print(cost_matrix)
+    model.set_cost_matrix(cost_matrix)
+    print(model.get_cost_matrix())
+    print("Compiling model")
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01))
 
     # Ensure distance_matrix is a valid tensor and reshape it to match the expected input shape
@@ -304,6 +330,7 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
     dummy_target = tf.zeros((1, n, n), dtype=tf.float32)
 
     # Train and save the model
+    print("Training model")
     model(dummy_target)
     
     if 'PYTEST_CURRENT_TEST' in os.environ:
@@ -318,4 +345,22 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
     print("Saving model to:", model_save_path)  
     # Save the model
     model.save(model_save_path)
+    #Save the cost matrix
+    with open(model_save_path + '_cost_matrix.pkl', 'wb') as f:
+        pickle.dump(cost_matrix, f)
+    print("Cost matrix saved")
+    # Load the saved cost matrix to verify
+    with open(model_save_path + '_cost_matrix.pkl', 'rb') as f:
+        loaded_cost_matrix = pickle.load(f)
+    # Check if the loaded cost matrix matches the original cost matrix
+    if np.array_equal(loaded_cost_matrix, cost_matrix):
+        print("Cost matrix has been correctly saved and verified.")
+    else:
+        print("Mismatch in the saved cost matrix.")
+        
+    # Verify that the model has been saved
+    if os.path.exists(model_save_path):
+        print(f"Model successfully saved to {model_save_path}")
+    else:
+        print(f"Failed to save the model to {model_save_path}")
    
