@@ -10,87 +10,6 @@ The SPP Network API allows you to load the adjacency file of a network and calcu
 
 ---
 
-## Endpoints
-
-### 1. **Load Network from File**
-
-#### **POST** `/learnNetwork`
-
-This endpoint loads a network from a CSV file and builds its internal representation.
-
-**Request Body**
-
-- Content-Type: `multipart/form-data`
-- Schema:
-  - `file` (required): CSV file containing the network data.
-    - Type: `string`
-    - Format: `binary`
-    - Description: The file should contain the network's nodes and edges.
-
-**Responses**
-
-- **200 OK**
-  - Description: Network successfully loaded.
-  - Content-Type: `application/json`
-  - Schema:
-    - `message` (`string`): Confirmation message.
-    - `status` (`string`): Either `success` or `error`.
-
-- **400 Bad Request**
-  - Description: The provided request is invalid.
-
-- **500 Internal Server Error**
-  - Description: An error occurred while processing the request.
-
----
-
-### 2. **Calculate Shortest Path**
-
-#### **GET** `/calculateShortestPath`
-
-This endpoint calculates the shortest path between two nodes in the loaded network.
-
-**Query Parameters**
-
-- `origin` (required): Origin node.
-  - Type: `string`
-  - Description: The starting point of the path.
-- `destination` (required): Destination node.
-  - Type: `string`
-  - Description: The endpoint of the path.
-
-**Responses**
-
-- **200 OK**
-  - Description: Shortest path successfully calculated.
-  - Content-Type: `application/json`
-  - Schema:
-    - `path` (`array of strings`): List of nodes in the shortest path.
-    - `distance` (`number`): Total distance of the path.
-
-- **400 Invalid Parameters**
-  - Description: Invalid or missing query parameters.
-
-- **404 Path Not Found**
-  - Description: No path exists between the specified nodes.
-
-- **500 Internal Server Error**
-  - Description: An error occurred while processing the request.
-
----
-
-## Example Usage
-
-### Load Network
-
-**Request:**
-```bash
-curl -X POST https://api.hopfieldspp.com/v1/learnNetwork \
-  -F "file=@network.csv"
-
-
-
-
 # Energy Function
 
 Energy function to solve the optimization problem of finding the **shortest path** between two nodes in a graph. This function combines multiple terms that impose constraints and objectives on the solution. Here is a general energy function for finding shortest paths without particularizing to a specific (origin, destination) pair:
@@ -178,3 +97,84 @@ $$
 The Energy Function combines **strong** (like path validity) and **weak** (like cost minimization and binariness) constraints to: 
 1. **Find a valid path**.
 2. **Minimize the total cost of the path**.
+---
+
+## Endpoints
+
+### 1. **Load Network from File**
+
+#### **POST** `/learnNetwork`
+
+This endpoint loads a network from a CSV file and builds its internal representation.
+
+**Request Body**
+
+- Content-Type: `multipart/form-data`
+- Schema:
+  - `file` (required): CSV file containing the network data.
+    - Type: `string`
+    - Format: `binary`
+    - Description: The file should contain the network's nodes and edges.
+
+**Responses**
+
+- **200 OK**
+  - Description: Network successfully loaded.
+  - Content-Type: `application/json`
+  - Schema:
+    - `message` (`string`): Confirmation message.
+    - `status` (`string`): Either `success` or `error`.
+
+- **400 Bad Request**
+  - Description: The provided request is invalid.
+
+- **500 Internal Server Error**
+  - Description: An error occurred while processing the request.
+
+---
+
+### 2. **Calculate Shortest Path**
+
+#### **GET** `/calculateShortestPath`
+
+This endpoint calculates the shortest path between two nodes in the loaded network.
+
+**Query Parameters**
+
+- `origin` (required): Origin node.
+  - Type: `string`
+  - Description: The starting point of the path.
+- `destination` (required): Destination node.
+  - Type: `string`
+  - Description: The endpoint of the path.
+
+**Responses**
+
+- **200 OK**
+  - Description: Shortest path successfully calculated.
+  - Content-Type: `application/json`
+  - Schema:
+    - `path` (`array of strings`): List of nodes in the shortest path.
+    - `distance` (`number`): Total distance of the path.
+
+- **400 Invalid Parameters**
+  - Description: Invalid or missing query parameters.
+
+- **404 Path Not Found**
+  - Description: No path exists between the specified nodes.
+
+- **500 Internal Server Error**
+  - Description: An error occurred while processing the request.
+
+---
+
+## Example Usage
+
+### Load Network
+
+**Request:**
+```bash
+curl -X POST https://api.hopfieldspp.com/v1/learnNetwork \
+  -F "file=@network.csv"
+
+---
