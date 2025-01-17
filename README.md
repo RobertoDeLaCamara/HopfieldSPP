@@ -177,7 +177,9 @@ This endpoint calculates the shortest path between two nodes in the loaded netwo
 curl -X POST https://api.hopfieldspp.com/v1/learnNetwork \
   -F "file=@network.csv"
 
+---
 ### Calculate Shortest Path
+
 **Request:**  
 ```bash
 curl -X GET "https://api.hopfieldspp.com/v1/calculateShortestPath?origin=A&destination=B"
