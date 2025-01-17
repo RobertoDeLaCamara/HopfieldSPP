@@ -334,22 +334,22 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
     
     if 'PYTEST_CURRENT_TEST' in os.environ:
         print("Function is being called by a pytest test")
-        model_save_path = "../data/synthetic/tests/synthetic_test_model.keras"
+        model_save_path = "../data/synthetic/tests/"
     else:
         print("Function is being called during real execution")
-        model_save_path = "../models/trained_model_without_source_dest.keras"
+        model_save_path = "../models/"
 
     # Ensure the directory exists
     os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
     print("Saving model to:", model_save_path)  
     # Save the model
-    model.save(model_save_path)
+    model.save(model_save_path +'trained_model.keras')
     #Save the cost matrix
-    with open(model_save_path + '_cost_matrix.pkl', 'wb') as f:
-        pickle.dump(cost_matrix, f)
+    with open(model_save_path + 'cost_matrix.pkl', 'wb') as f:
+        pickle.dump(cost_matrix, f)    
     print("Cost matrix saved")
     # Load the saved cost matrix to verify
-    with open(model_save_path + '_cost_matrix.pkl', 'rb') as f:
+    with open(model_save_path + 'cost_matrix.pkl', 'rb') as f:
         loaded_cost_matrix = pickle.load(f)
     # Check if the loaded cost matrix matches the original cost matrix
     if np.array_equal(loaded_cost_matrix, cost_matrix):

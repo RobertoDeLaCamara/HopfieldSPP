@@ -2,8 +2,8 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 import pandas as pd
 import os
-from src.train_model import HopfieldLayer, HopfieldModel
-from src.train_model import train_offline_model
+from train_model import HopfieldLayer, HopfieldModel
+from train_model import train_offline_model
 from tensorflow.keras.saving import custom_object_scope
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
@@ -36,6 +36,7 @@ def calculate_real_path_cost(real_cost_matrix, path):
 def get_shortest_path(origin, destination):
     """
     Calculates the shortest path between two nodes in the network using a pre-trained Hopfield model.
+    
     Args: 
         origin (int): The starting node.
         destination (int): The destination node.
@@ -46,7 +47,7 @@ def get_shortest_path(origin, destination):
         ValueError: If cost_matrix, origin, or destination is None.
         RuntimeError: If the model prediction returns an empty path or if any error occurs during the calculation.
     """
-    print("Inside calculating the shortest path")
+    # Load the pre-trained model from the right path depending on the environment (test or production)
     model_path = '../models/trained_model_without_source_dest.keras'
     if 'PYTEST_CURRENT_TEST' in os.environ:
         model_path = '../data/synthetic/tests/synthetic_test_model.keras'
@@ -59,22 +60,14 @@ def get_shortest_path(origin, destination):
     logging.basicConfig(level=logging.ERROR)
     logger = logging.getLogger(__name__)
     
-    '''
-    try:
-        with custom_object_scope({'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer}):
-            loaded_model = load_model(model_path, custom_objects={'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer})
-    except Exception as e:
-        logger.error(f"Error loading model: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error loading model: {str(e)}")    
-    '''    
-    
     
     try:
         # Load the pre-trained model from the right path depending on the environment (test or production)
         with custom_object_scope({'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer}):
             loaded_model = load_model(model_path, custom_objects={'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer})
         print("Model loaded")
-        #Load cost matrix
+        
+        # Load cost matrix
         with open(model_path + '_cost_matrix.pkl', 'rb') as f:
             cost_matrix = pickle.load(f)
         print(cost_matrix)
@@ -86,14 +79,17 @@ def get_shortest_path(origin, destination):
         destination = int(destination)
         print("Origin:", origin)
         print("Destination:", destination)
+        
+        # Make prediction
         path = loaded_model.predict(origin, destination)
         if not path:
             raise RuntimeError("Model prediction returned an empty path.")
         print("Predicted Path:", path)
         
-        
+        # Calculate the cost of the shortest path with real costs
         path_cost = calculate_real_path_cost(cost_matrix, path)
         print("Cost of the Shortest Path (Real Costs):", path_cost)
+        
         result = {
             "path": [int(node) for node in path],
             "cost": float(path_cost)
@@ -101,12 +97,8 @@ def get_shortest_path(origin, destination):
         return result
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"An error occurred while calculating the shortest path:: {str(e)}")    
+        raise HTTPException(status_code=500, detail=f"An error occurred while calculating the shortest path: {str(e)}")
         
-    
-    # return {"path": [1, 2, 3], "cost": 0.5}   
-
-
 
 @app.post("/loadNetwork")
 async def load_network(file: UploadFile = File(...)):
@@ -152,7 +144,6 @@ async def load_network(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")
         
         print("Training model")
-        # train_offline_model(file.file)
         # Save the uploaded file to a temporary location
         temp_file_path = f"/tmp/{file.filename}"
         with open(temp_file_path, "wb") as temp_file:
@@ -198,7 +189,7 @@ async def calculate_shortest_path(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calculating the shortest path: {str(e)}")
     
-    # return {"path": [1, 2, 3], "cost": 0.5}
+  
     
 if __name__ == "__main__":
     import uvicorn

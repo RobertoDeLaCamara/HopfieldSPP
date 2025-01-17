@@ -1,6 +1,6 @@
 # File: tests/test_main.py
 
-from fastapi import UploadFile, Response
+from fastapi import UploadFile
 import pytest
 from fastapi.testclient import TestClient
 from src.main import app
@@ -158,10 +158,10 @@ def test_calculate_shortest_path_synthetic_network(setup_synthetic_data: None):
 
         
         print("Calculating shortest path")    
-        shortest_path_response = client.get("/calculateShortestPath?origin=1&destination=3")
+        shortest_path_response = client.get("/calculateShortestPath?origin=1&destination=2")
         assert shortest_path_response.status_code == 200
         
-        assert shortest_path_response.json() == {"path": ["1", "48", "15", "29", "3"], "distance": 2.8}, \
+        assert shortest_path_response.json() == {"path": ["1", "48", "15", "29", "3"], "distance": 0.5}, \
             f"Unexpected response JSON: {shortest_path_response.json()}"
         
     finally:
