@@ -12,6 +12,7 @@ import os
 import pickle
 
 
+
 app = FastAPI()
 
 def calculate_real_path_cost(real_cost_matrix, path):
@@ -48,9 +49,9 @@ def get_shortest_path(origin, destination):
         RuntimeError: If the model prediction returns an empty path or if any error occurs during the calculation.
     """
     # Load the pre-trained model from the right path depending on the environment (test or production)
-    model_path = '../models/trained_model_without_source_dest.keras'
+    model_path = '../models/'
     if 'PYTEST_CURRENT_TEST' in os.environ:
-        model_path = '../data/synthetic/tests/synthetic_test_model.keras'
+        model_path = '../data/synthetic/tests/'
     
     if not os.path.exists(model_path):
         print(f"Model not found at path: {model_path}")
@@ -64,11 +65,11 @@ def get_shortest_path(origin, destination):
     try:
         # Load the pre-trained model from the right path depending on the environment (test or production)
         with custom_object_scope({'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer}):
-            loaded_model = load_model(model_path, custom_objects={'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer})
+            loaded_model = load_model(model_path + 'trained_model.keras', custom_objects={'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer})
         print("Model loaded")
         
         # Load cost matrix
-        with open(model_path + '_cost_matrix.pkl', 'rb') as f:
+        with open(model_path + 'cost_matrix.pkl', 'rb') as f:
             cost_matrix = pickle.load(f)
         print(cost_matrix)
         print("Cost matrix loaded")
