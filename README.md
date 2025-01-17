@@ -1,14 +1,14 @@
 # HopfieldSPP
 Neural model for solving the Shortest Path Problem based on a Hopfield Network based on minimizing the energy function of the network.
 
-# SPP Network API Documentation
+# HopfieldSPP Network API Documentation
 
 ## Overview
 
-The SPP Network API allows you to load the adjacency file of a network and calculate the shortest path between 2 nodes of the network. The API uses the Hopfield Neural Model to solve the Shortest Path Problem.
+The HopfieldSPP Network API allows you to load the adjacency file of a network and calculate the shortest path between 2 nodes of the network. The API uses the Hopfield Neural Model to solve the Shortest Path Problem.
 
+HopfieldSPP finds the shortest path between two nodes in the network by minimizing the following energy function:
 
----
 
 # Energy Function
 
