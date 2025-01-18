@@ -2,8 +2,8 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 import pandas as pd
 import os
-from train_model import HopfieldLayer, HopfieldModel
-from train_model import train_offline_model
+from src.train_model import HopfieldLayer, HopfieldModel
+from src.train_model import train_offline_model
 from tensorflow.keras.saving import custom_object_scope
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
@@ -11,7 +11,9 @@ import logging
 import os
 import pickle
 
-
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -54,7 +56,7 @@ def get_shortest_path(origin, destination):
         model_path = '../data/synthetic/tests/'
     
     if not os.path.exists(model_path):
-        print(f"Model not found at path: {model_path}")
+        logger.error(f"Model not found at path: {model_path}")
         raise HTTPException(status_code=404, detail=f"Model not found at path: {model_path}")
 
     # Configure logging
@@ -66,30 +68,30 @@ def get_shortest_path(origin, destination):
         # Load the pre-trained model from the right path depending on the environment (test or production)
         with custom_object_scope({'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer}):
             loaded_model = load_model(model_path + 'trained_model.keras', custom_objects={'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer})
-        print("Model loaded")
+        logger.info("Model loaded")
         
         # Load cost matrix
         with open(model_path + 'cost_matrix.pkl', 'rb') as f:
             cost_matrix = pickle.load(f)
         print(cost_matrix)
-        print("Cost matrix loaded")
+        logger.info("Cost matrix loaded")
         
         loaded_model.compile(optimizer=Adam(learning_rate=0.01))
-        print("Model compiled")
+        logger.info("Model compiled")
         origin = int(origin)
         destination = int(destination)
-        print("Origin:", origin)
-        print("Destination:", destination)
+        logger.info(f"Origin: {origin}, Destination: {destination}")
+        
         
         # Make prediction
         path = loaded_model.predict(origin, destination)
         if not path:
             raise RuntimeError("Model prediction returned an empty path.")
-        print("Predicted Path:", path)
+        logger.info(f"Predicted Path: {path}")
         
         # Calculate the cost of the shortest path with real costs
         path_cost = calculate_real_path_cost(cost_matrix, path)
-        print("Cost of the Shortest Path (Real Costs):", path_cost)
+        logger.info(f"Cost of the Shortest Path (Real Costs): {path_cost}")
         
         result = {
             "path": [int(node) for node in path],
@@ -115,27 +117,21 @@ async def load_network(file: UploadFile = File(...)):
         dict: A dictionary containing a success message and status.
     '''
     
-    print("Loading network")
-    
-    # Debug: Check the file content type and name
-    print(f"File name: {file.filename}")
-    print(f"File content type: {file.content_type}")
+    logger.info("Loading network")
+    logger.info(f"File name: {file.filename}, File content type: {file.content_type}")
 
-    # Debug: Read the content of the file
     try:
-        content = file.file.read()  # Read the file content
-        print(f"File content:\n{content.decode('utf-8')}")  # Decode for readability if it's text
+        content = file.file.read()
+        logger.debug(f"File content:\n{content.decode('utf-8')}")
     except Exception as e:
-        print(f"Error reading file content: {str(e)}")
+        logger.error(f"Error reading file content: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error reading file content: {str(e)}")
     finally:
-        # Reset the file pointer to the beginning for further use
         file.file.seek(0)
 
-    # Continue with your normal processing logic
     if file.content_type != "text/csv":
         raise HTTPException(status_code=400, detail="Only CSV files are supported.")
-    
+
     try:
         df = pd.read_csv(
             file.file, usecols=["origin", "destination", "weight"],
@@ -143,16 +139,14 @@ async def load_network(file: UploadFile = File(...)):
         )
         if df.empty:
             raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")
-        
-        print("Training model")
-        # Save the uploaded file to a temporary location
+
+        logger.info("Training model")
         temp_file_path = f"/tmp/{file.filename}"
         with open(temp_file_path, "wb") as temp_file:
             temp_file.write(content)
-        print(f"File saved to {temp_file_path}")
-        # Train the model using the path to the temporary file
+        logger.info(f"File saved to {temp_file_path}")
+
         train_offline_model(temp_file_path)
-        # Optionally, remove the temporary file after processing
         os.remove(temp_file_path)
         return {"message": "Network loaded successfully", "status": "success"}
     except pd.errors.EmptyDataError:
@@ -160,9 +154,8 @@ async def load_network(file: UploadFile = File(...)):
     except pd.errors.ParserError as e:
         raise HTTPException(status_code=400, detail=f"Error parsing the CSV file: {str(e)}")
     except Exception as e:
+        logger.error(f"Error processing the file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing the file: {str(e)}")
-
-
 
 @app.get("/calculateShortestPath")
 async def calculate_shortest_path(
@@ -172,11 +165,9 @@ async def calculate_shortest_path(
     """
     Calculates the shortest path between two nodes in the graph.
     """
-    print(f"Calculating shortest path from {origin} to {destination}")
-        
+    logger.info(f"Calculating shortest path from {origin} to {destination}")
+
     try:
-        # return calculate_shortest_path(graph, origin, destination
-        print("Waiting for the result of fake function")
         result = {
             "path": [],
             "cost": 0.0
@@ -184,14 +175,12 @@ async def calculate_shortest_path(
         origin = int(origin)
         destination = int(destination)
         result = get_shortest_path(origin, destination)  
-        print(result)
+        logger.info(f"Shortest path calculation result: {result}")
         return result
-        
     except Exception as e:
+        logger.error(f"Error calculating the shortest path: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error calculating the shortest path: {str(e)}")
-    
-  
-    
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=63234)

@@ -1,28 +1,23 @@
-# Use an official Python runtime as the base image
-FROM python:3.10.5-slim
+FROM python:3.9-slim
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the requirements file to the container
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file and install Python dependencies
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Create and activate virtual environment
-RUN python -m venv venv
-RUN . venv/bin/activate
+# Copy application code
+COPY . .
 
-# Install dependencies
-RUN . venv/bin/activate && pip install --no-cache-dir -r requirements.txt
-
-# Copy the application code to the container
-COPY . /app/
-
-# Expose the port the app runs on
-# Using non-standard port 63234 intentionally
+# Expose the port for the FastAPI application
 EXPOSE 63234
 
-CMD ["uvicorn", \
-	 "main:app", \
-	 "--host", "0.0.0.0", \
-	 "--port", "63234"]
-
+# Command to run the application
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "63234"]
