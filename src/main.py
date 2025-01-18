@@ -59,10 +59,7 @@ def get_shortest_path(origin, destination):
         logger.error(f"Model not found at path: {model_path}")
         raise HTTPException(status_code=404, detail=f"Model not found at path: {model_path}")
 
-    # Configure logging
-    logging.basicConfig(level=logging.ERROR)
-    logger = logging.getLogger(__name__)
-    
+       
     
     try:
         # Load the pre-trained model from the right path depending on the environment (test or production)
