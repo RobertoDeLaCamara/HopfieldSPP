@@ -227,6 +227,7 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
 
     logger.info("Training model")
     model(dummy_target)
+    model.fit(dummy_target, epochs=1000)
 
     if 'PYTEST_CURRENT_TEST' in os.environ:
         logger.info("Function is being called by a pytest test")

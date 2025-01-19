@@ -51,7 +51,8 @@ def get_shortest_path(origin, destination):
         RuntimeError: If the model prediction returns an empty path or if any error occurs during the calculation.
     """
     # Load the pre-trained model from the right path depending on the environment (test or production)
-    model_path = '../models/'
+    model_path = os.path.join(os.getcwd(), 'models/')
+
     if 'PYTEST_CURRENT_TEST' in os.environ:
         model_path = '../data/synthetic/tests/'
     
