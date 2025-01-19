@@ -1,9 +1,9 @@
-fastapi
-uvicorn
-python-multipart
-tensorflow
-numpy
-pydantic
-pandas
-matplotlib
-networkx
+fastapi == 0.115.6
+uvicorn == 0.34.0
+python-multipart == 0.0.20
+tensorflow == 2.18.0
+numpy == 2.0.2
+pydantic == 2.10.4
+pandas == 2.2.3
+matplotlib == 3.9.4
+networkx == 3.2.1

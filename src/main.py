@@ -71,7 +71,6 @@ def get_shortest_path(origin, destination):
         # Load cost matrix
         with open(model_path + 'cost_matrix.pkl', 'rb') as f:
             cost_matrix = pickle.load(f)
-        print(cost_matrix)
         logger.info("Cost matrix loaded")
         
         loaded_model.compile(optimizer=Adam(learning_rate=0.01))
