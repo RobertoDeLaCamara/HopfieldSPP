@@ -23,7 +23,7 @@ pipeline {
         }
         stage('Ejecutar Tests') {
             steps {
-                 //Instalar pytest
+                 //Instalar pytest y httpx
                 sh '''
                     . ${VENV_DIR}/bin/activate
                     pip install pytest
