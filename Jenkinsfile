@@ -32,7 +32,7 @@ pipeline {
                 // Activar el entorno virtual y ejecutar pytest
                 sh '''
                    . ${VENV_DIR}/bin/activate
-                   pytest --maxfail=1 --disable-warnings -q
+                   pytest --disable-warnings --junitxml=report.xml
                 '''
             }
         }
@@ -40,7 +40,8 @@ pipeline {
 
     post {
         always {
-            // Limpieza o generación de reportes (opcional)
+            // Generación de reportes 
+            junit 'report.xml'
             echo 'Job finalizado.'
         }
     }
