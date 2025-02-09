@@ -23,13 +23,11 @@ pipeline {
         }
         stage('Ejecutar Tests') {
             steps {
-                //Instalar pytest
+                 //Instalar pytest
                 sh '''
                     . ${VENV_DIR}/bin/activate
                     pip install pytest
                 '''
-            }
-            steps {
                 // Activar el entorno virtual y ejecutar pytest
                 sh '''
                    . ${VENV_DIR}/bin/activate
