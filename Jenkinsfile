@@ -27,6 +27,7 @@ pipeline {
                 sh '''
                     . ${VENV_DIR}/bin/activate
                     pip install pytest
+                    pip install httpx
                 '''
                 // Activar el entorno virtual y ejecutar pytest
                 sh '''
