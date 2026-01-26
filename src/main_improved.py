@@ -1,81 +1,92 @@
-# File: main.py
+# File: main_improved.py
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 import pandas as pd
 import os
-from src.train_model import HopfieldLayer, HopfieldModel
-from src.train_model import train_offline_model
+from src.train_model_improved import ImprovedHopfieldLayer, ImprovedHopfieldModel, train_improved_model
 from tensorflow.keras.saving import custom_object_scope
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
 import logging
-import os
 import pickle
+import time
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-def calculate_real_path_cost(real_cost_matrix, path):
-    """
-    Calculates the cost of the shortest path given the real cost matrix and a path.
+# Global cache for model (FIXED: avoid reloading on every request)
+_model_cache = {
+    "model": None,
+    "cost_matrix": None,
+    "timestamp": None
+}
 
-    Args:
-        real_cost_matrix (list of list of float): A 2D list representing the cost matrix of the network
-            without normalization.
-        path (list of int): A list of node indices representing the shortest path.
-
-    Returns:
-        float: The cost of the shortest path.
-
-    """
-    cost = 0
-    for i in range(len(path) - 1):
-        cost += real_cost_matrix[path[i], path[i + 1]]
-    return cost
-
-
-def get_shortest_path(origin, destination):
-    """
-    Calculates the shortest path between two nodes in the network using a pre-trained Hopfield model.
+def get_cached_model():
+    """Load model once and cache in memory."""
+    global _model_cache
     
-    Args: 
-        origin (int): The starting node.
-        destination (int): The destination node.
-    Returns:
-        dict: A dictionary containing the predicted path and the cost of the shortest path.
-
-    Raises:
-        ValueError: If cost_matrix, origin, or destination is None.
-        RuntimeError: If the model prediction returns an empty path or if any error occurs during the calculation.
-    """
-    # Load the pre-trained model from the right path depending on the environment (test or production)
     model_path = os.path.join(os.getcwd(), 'models/')
-
+    
     if 'PYTEST_CURRENT_TEST' in os.environ:
         model_path = '../data/synthetic/tests/'
     
     if not os.path.exists(model_path):
         logger.error(f"Model not found at path: {model_path}")
         raise HTTPException(status_code=404, detail=f"Model not found at path: {model_path}")
-
-       
+    
+    # Check if model is already cached
+    if _model_cache["model"] is not None:
+        logger.info("Using cached model")
+        return _model_cache["model"], _model_cache["cost_matrix"]
     
     try:
-        # Load the pre-trained model from the right path depending on the environment (test or production)
-        with custom_object_scope({'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer}):
-            loaded_model = load_model(model_path + 'trained_model.keras', custom_objects={'HopfieldModel': HopfieldModel, 'HopfieldLayer': HopfieldLayer})
+        # Load model
+        with custom_object_scope({
+            'ImprovedHopfieldModel': ImprovedHopfieldModel, 
+            'ImprovedHopfieldLayer': ImprovedHopfieldLayer
+        }):
+            loaded_model = load_model(
+                model_path + 'trained_model_improved.keras',
+                custom_objects={
+                    'ImprovedHopfieldModel': ImprovedHopfieldModel,
+                    'ImprovedHopfieldLayer': ImprovedHopfieldLayer
+                }
+            )
         logger.info("Model loaded")
         
         # Load cost matrix
-        with open(model_path + 'cost_matrix.pkl', 'rb') as f:
+        with open(model_path + 'cost_matrix_improved.pkl', 'rb') as f:
             cost_matrix = pickle.load(f)
         logger.info("Cost matrix loaded")
         
-        loaded_model.compile(optimizer=Adam(learning_rate=0.01))
+        loaded_model.compile(optimizer=Adam(learning_rate=0.02))
         loaded_model.set_cost_matrix(cost_matrix)
-        logger.info("Model compiled")
+        
+        # Cache the model
+        _model_cache["model"] = loaded_model
+        _model_cache["cost_matrix"] = cost_matrix
+        _model_cache["timestamp"] = time.time()
+        
+        return loaded_model, cost_matrix
+        
+    except Exception as e:
+        logger.error(f"Error loading model: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error loading model: {str(e)}")
+
+def invalidate_model_cache():
+    """Clear model cache when new model is trained."""
+    global _model_cache
+    _model_cache = {"model": None, "cost_matrix": None, "timestamp": None}
+    logger.info("Model cache invalidated")
+
+def get_shortest_path(origin, destination):
+    """
+    Calculates the shortest path using improved Hopfield model with fallback.
+    """
+    try:
+        model, cost_matrix = get_cached_model()
+        
         origin = int(origin)
         destination = int(destination)
         logger.info(f"Origin: {origin}, Destination: {destination}")
@@ -87,43 +98,36 @@ def get_shortest_path(origin, destination):
         if destination < 0 or destination >= n:
             raise ValueError(f"Destination node {destination} is out of range [0, {n-1}]")
         
-        # Make prediction
-        path = loaded_model.predict(origin, destination)
+        # Make prediction with improved algorithm
+        path = model.predict(origin, destination, num_restarts=3, validate=True)
+        
         if not path:
             raise RuntimeError("Model prediction returned an empty path.")
+        
         logger.info(f"Predicted Path: {path}")
         
-        # Calculate the cost of the shortest path with real costs
-        path_cost = calculate_real_path_cost(cost_matrix, path)
-        logger.info(f"Cost of the Shortest Path (Real Costs): {path_cost}")
+        # Calculate path cost
+        path_cost = model._calculate_path_cost(path)
+        logger.info(f"Cost of the Shortest Path: {path_cost}")
         
         result = {
             "path": [int(node) for node in path],
             "cost": float(path_cost)
         }
         return result
+        
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error loading model: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"An error occurred while calculating the shortest path: {str(e)}")
-        
+        logger.error(f"Error calculating shortest path: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.post("/loadNetwork")
 async def load_network(file: UploadFile = File(...)):
     '''
-    Loads a network from a CSV file.
-    
-    Args:
-        file (UploadFile): An uploaded file object expected to be a CSV file.
-    Raises:
-        HTTPException: If the file is not a CSV or if the CSV does not contain the required columns.
-        HTTPException: If there is an error processing the file.
-    Returns:
-        dict: A dictionary containing a success message and status.
+    Loads a network from a CSV file and trains improved model.
     '''
-    
     logger.info("Loading network")
     logger.info(f"File name: {file.filename}, File content type: {file.content_type}")
 
@@ -147,15 +151,20 @@ async def load_network(file: UploadFile = File(...)):
         if df.empty:
             raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")
 
-        logger.info("Training model")
+        logger.info("Training improved model")
         temp_file_path = f"/tmp/{file.filename}"
         with open(temp_file_path, "wb") as temp_file:
             temp_file.write(content)
         logger.info(f"File saved to {temp_file_path}")
 
-        train_offline_model(temp_file_path)
+        train_improved_model(temp_file_path)
         os.remove(temp_file_path)
+        
+        # Invalidate cache so new model is loaded
+        invalidate_model_cache()
+        
         return {"message": "Network loaded successfully", "status": "success"}
+        
     except pd.errors.EmptyDataError:
         raise HTTPException(status_code=400, detail="The CSV file is empty or invalid.")
     except pd.errors.ParserError as e:
@@ -170,7 +179,7 @@ async def calculate_shortest_path(
     destination: str = Query(..., description="The destination node")
 ):
     """
-    Calculates the shortest path between two nodes in the graph.
+    Calculates the shortest path between two nodes using improved algorithm.
     """
     logger.info(f"Calculating shortest path from {origin} to {destination}")
 
@@ -195,4 +204,4 @@ async def calculate_shortest_path(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=63234)
+    uvicorn.run(app, host="0.0.0.0", port=63235)

@@ -25,22 +25,23 @@ def calculate_cost_matrix(adjacency_matrix):
         adjacency_matrix (str): The path to the CSV file containing the adjacency matrix.
     Returns:
         cost_matrix: A 2D numpy array representing the cost matrix.
+        node_mapping: Dictionary mapping original node IDs to matrix indices.
 
     """
     try:
         df = pd.read_csv(adjacency_matrix, usecols=['origin', 'destination', 'weight'])
     except FileNotFoundError:
         logger.error("File not found. Please check the file path.")
-        exit()
+        raise
     except pd.errors.EmptyDataError:
         logger.error("The file is empty or invalid.")
-        exit()
+        raise
 
-    nodos = pd.unique(df[['origin', 'destination']].values.ravel())
-    node_to_index = pd.Series(range(len(nodos)), index=nodos)
+    nodos = sorted(pd.unique(df[['origin', 'destination']].values.ravel()))
+    node_to_index = {node: idx for idx, node in enumerate(nodos)}
     n = len(nodos)
 
-    cost_matrix = np.full((n, n), np.inf, dtype=float)
+    cost_matrix = np.full((n, n), 1e6, dtype=float)
     np.fill_diagonal(cost_matrix, 0)
 
     for _, row in df.iterrows():
@@ -50,12 +51,13 @@ def calculate_cost_matrix(adjacency_matrix):
             costo = float(row['weight'])
             cost_matrix[node_to_index[origen], node_to_index[destino]] = costo
         except KeyError:
-            logger.error("Missing columns 'origen', 'destino', or 'costo'.")
-            exit()
+            logger.error("Missing columns 'origin', 'destination', or 'weight'.")
+            raise
         except ValueError:
             logger.error(f"Invalid cost value on row {_}.")
-            exit()
-    return cost_matrix
+            raise
+    
+    return cost_matrix, node_to_index
 
 @register_keras_serializable()
 class HopfieldLayer(Layer):
@@ -81,7 +83,7 @@ class HopfieldLayer(Layer):
         col_constraint = tf.reduce_sum(tf.square(tf.reduce_sum(self.x, axis=0) - 1))
         binary_constraint = tf.reduce_sum(tf.square(self.x * (1 - self.x)))
         invalid_arcs_penalty = tf.reduce_sum(tf.square(self.x * (1 - self.valid_arcs)))
-        return (mu1/2)*path_cost + (mu2/2)*row_constraint + (mu2/2)*col_constraint + (mu3/2)*binary_constraint + 1000*invalid_arcs_penalty	
+        return (mu1/2)*path_cost + (mu2/2)*row_constraint + (mu2/2)*col_constraint + (mu3/2)*binary_constraint + (mu2*5)*invalid_arcs_penalty	
             
     def fine_tune_with_constraints(self, source, destination, iterations=500):
         logger.info("Initial Energy: %s", self.energy().numpy())
@@ -96,6 +98,8 @@ class HopfieldLayer(Layer):
             gradients = tape.gradient(energy, [self.x])
             self.optimizer.apply_gradients(zip(gradients, [self.x]))
             self.x.assign(tf.clip_by_value(self.x, 0.0, 1.0))
+            # Mask invalid arcs
+            self.x.assign(self.x * self.valid_arcs)
             if i % 100 == 0:
                 logger.info("Fine-Tuning Iteration %d, Energy: %s", i, energy.numpy())
         logger.info("Final Energy: %s", self.energy().numpy())
@@ -141,6 +145,65 @@ class HopfieldModel(Model):
     def get_cost_matrix(self):
         return self.cost_matrix
     
+    def _dijkstra(self, source, destination):
+        """Calculate shortest path cost using Dijkstra's algorithm for validation."""
+        n = len(self.cost_matrix)
+        dist = np.full(n, np.inf)
+        dist[source] = 0
+        visited = set()
+        
+        for _ in range(n):
+            u = None
+            for i in range(n):
+                if i not in visited and (u is None or dist[i] < dist[u]):
+                    u = i
+            if u is None or dist[u] == np.inf:
+                break
+            visited.add(u)
+            
+            for v in range(n):
+                if self.cost_matrix[u][v] < 1e6:
+                    dist[v] = min(dist[v], dist[u] + self.cost_matrix[u][v])
+        
+        return dist[destination]
+    
+    def _calculate_path_cost(self, path):
+        """Calculate total cost of a path."""
+        cost = 0
+        for i in range(len(path) - 1):
+            edge_cost = self.cost_matrix[path[i]][path[i + 1]]
+            if edge_cost >= 1e6:
+                return np.inf
+            cost += edge_cost
+        return cost
+    
+    def validate_path(self, path, source, destination):
+        """Validate path correctness and compare with Dijkstra."""
+        if not path or path[0] != source or path[-1] != destination:
+            return False, "Invalid path endpoints"
+        
+        # Check connectivity
+        for i in range(len(path) - 1):
+            if self.cost_matrix[path[i]][path[i + 1]] >= 1e6:
+                return False, f"Invalid edge between {path[i]} and {path[i+1]}"
+        
+        # Compare with Dijkstra
+        dijkstra_cost = self._dijkstra(source, destination)
+        hopfield_cost = self._calculate_path_cost(path)
+        
+        if dijkstra_cost == np.inf:
+            return False, "No path exists between nodes"
+        
+        accuracy = (dijkstra_cost / hopfield_cost * 100) if hopfield_cost > 0 else 0
+        is_optimal = abs(hopfield_cost - dijkstra_cost) < 1e-6
+        
+        return True, {
+            "is_optimal": is_optimal,
+            "hopfield_cost": float(hopfield_cost),
+            "dijkstra_cost": float(dijkstra_cost),
+            "accuracy_percent": float(accuracy)
+        }
+    
     def train_step(self, data):
         with tf.GradientTape() as tape:
             loss = self.hopfield_layer.energy()
@@ -151,26 +214,57 @@ class HopfieldModel(Model):
     def call(self, inputs, training=False):
         return self.hopfield_layer(inputs, training=training)
     
-    def predict(self,source,destination):
+    def predict(self, source, destination, validate=True):
+        if source == destination:
+            return [source]
+            
         self.hopfield_layer.fine_tune_with_constraints(source, destination)
         state_matrix = tf.round(self.hopfield_layer.x).numpy()
         
-        def extract_path(state_matrix):
-            path = []
-            current_node = source
-            visited = set()
-            while current_node != destination:
-                path.append(current_node)
-                visited.add(current_node)
-                next_node = np.argmax(state_matrix[current_node])
-                if next_node in visited or next_node == destination:
-                    break
-                current_node = next_node
+        def extract_path(state_matrix, source, destination):
+            path = [source]
+            current = source
+            visited = {source}
+            max_steps = len(state_matrix)
+            
+            for _ in range(max_steps):
+                next_node = np.argmax(state_matrix[current])
+                
+                # Check if there's a valid edge
+                if state_matrix[current][next_node] < 0.5:
+                    logger.warning(f"No valid edge from node {current}")
+                    return None
+                
+                # Check if we reached destination
+                if next_node == destination:
+                    path.append(destination)
+                    return path
+                
+                # Check for cycles
+                if next_node in visited:
+                    logger.warning(f"Cycle detected at node {next_node}")
+                    return None
+                
+                path.append(next_node)
+                visited.add(next_node)
+                current = next_node
+            
+            logger.warning(f"Max steps reached without finding destination")
+            return None
 
-            path.append(destination)
-            return path
-
-        return extract_path(state_matrix)
+        path = extract_path(state_matrix, source, destination)
+        if path is None:
+            raise ValueError(f"No valid path found from {source} to {destination}")
+        
+        if validate and self.cost_matrix is not None:
+            is_valid, result = self.validate_path(path, source, destination)
+            if is_valid:
+                logger.info(f"Path validation: {result}")
+            else:
+                logger.error(f"Path validation failed: {result}")
+                raise ValueError(f"Invalid path: {result}")
+        
+        return path
        
     def get_config(self):
         config = super(HopfieldModel, self).get_config()
@@ -187,25 +281,17 @@ class HopfieldModel(Model):
 def train_offline_model(adjacency_matrix_path: str) -> None:
     logger.info("Training offline model")
     logger.info("Adjacency matrix path: %s", adjacency_matrix_path)
-    try:
-        df = pd.read_csv(adjacency_matrix_path)
-        if df.empty:
-            raise ValueError("Adjacency matrix file is empty or invalid")
-    except Exception as e:
-        logger.error("Error loading adjacency matrix: %s", str(e))
-        raise
-
+    
     logger.info("Calculating cost matrix")
     try:
-        cost_matrix = calculate_cost_matrix(adjacency_matrix_path)
+        cost_matrix, node_mapping = calculate_cost_matrix(adjacency_matrix_path)
     except Exception as e:
         logger.error("Error calculating cost matrix: %s", str(e))
         raise
 
-    cost_matrix = np.array(df.pivot(index='origin', columns='destination', values='weight').fillna(1e6))
-    cost_matrix[cost_matrix == np.inf] = 1e12
+    # Normalize cost matrix
     cost_matrix_normalized = (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
-    distance_matrix = cost_matrix_normalized.flatten()
+    distance_matrix = cost_matrix_normalized
 
     n = distance_matrix.shape[0]
     logger.info("Number of nodes: %d", n)
@@ -219,10 +305,6 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
     logger.info("Compiling model")
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01))
 
-    m = int(sqrt(n))
-    distance_matrix_tensor = tf.constant(distance_matrix, dtype=tf.float32)
-    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (m, m))  
-    distance_matrix_tensor = tf.reshape(distance_matrix_tensor, (1, m, m))  
     dummy_target = tf.zeros((1, n, n), dtype=tf.float32)
 
     logger.info("Training model")
