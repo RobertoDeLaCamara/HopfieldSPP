@@ -60,24 +60,26 @@ pipeline {
         stage('Run Tests') {
             steps {
                 echo 'Running test suite with coverage...'
-                script {
-                    try {
-                        sh '''
-                        docker run --name test-spp-$BUILD_NUMBER \
-                            --user root \
-                            -v "$WORKSPACE/tests:/app/tests" \
-                            $REGISTRY/$IMAGE_NAME:$BUILD_NUMBER \
-                            sh -c "pip install --quiet pytest httpx pytest-cov && python -m pytest tests/ -v \
-                                --junitxml=test-results.xml \
-                                --cov=src \
-                                --cov-report=xml:coverage.xml \
-                                --cov-report=term-missing \
-                                --disable-warnings"
-                        '''
-                    } finally {
-                        sh "docker cp test-spp-${env.BUILD_NUMBER}:/app/test-results.xml ${env.WORKSPACE}/test-results.xml || true"
-                        sh "docker cp test-spp-${env.BUILD_NUMBER}:/app/coverage.xml ${env.WORKSPACE}/coverage.xml || true"
-                        sh "docker rm test-spp-${env.BUILD_NUMBER} || true"
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    script {
+                        try {
+                            sh '''
+                            docker run --name test-spp-$BUILD_NUMBER \
+                                --user root \
+                                -v "$WORKSPACE/tests:/app/tests" \
+                                $REGISTRY/$IMAGE_NAME:$BUILD_NUMBER \
+                                sh -c "pip install --quiet pytest httpx pytest-cov scipy && python -m pytest tests/ -v \
+                                    --junitxml=test-results.xml \
+                                    --cov=src \
+                                    --cov-report=xml:coverage.xml \
+                                    --cov-report=term-missing \
+                                    --disable-warnings"
+                            '''
+                        } finally {
+                            sh "docker cp test-spp-${env.BUILD_NUMBER}:/app/test-results.xml ${env.WORKSPACE}/test-results.xml || true"
+                            sh "docker cp test-spp-${env.BUILD_NUMBER}:/app/coverage.xml ${env.WORKSPACE}/coverage.xml || true"
+                            sh "docker rm test-spp-${env.BUILD_NUMBER} || true"
+                        }
                     }
                 }
             }
