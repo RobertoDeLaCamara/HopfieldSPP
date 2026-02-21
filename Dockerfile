@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-COPY ./models/trained_model.keras /app/models/
+RUN mkdir -p /app/models
 
 
 # Expose the port for the FastAPI application
