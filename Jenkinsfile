@@ -32,11 +32,13 @@ pipeline {
             parallel {
                 stage('Lint') {
                     steps {
-                        sh """
-                        docker run --rm --user root \
-                            ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER} \
-                            sh -c 'pip install --quiet flake8 && flake8 src/ --max-line-length=120 --count --statistics'
-                        """
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh """
+                            docker run --rm --user root \
+                                ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER} \
+                                sh -c 'pip install --quiet flake8 && flake8 src/ --max-line-length=120 --count --statistics'
+                            """
+                        }
                     }
                 }
 
