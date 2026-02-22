@@ -264,7 +264,8 @@ class AdvancedHopfieldLayer(Layer):
             prev_energy = energy.numpy()
 
             if i % 50 == 0:
-                lr = optimizer.learning_rate(i).numpy()
+                current_lr = optimizer.learning_rate
+                lr = float(current_lr(i)) if callable(current_lr) else float(current_lr)
                 logger.info(f"Iter {i}, Energy: {energy.numpy():.4f}, Temp: {temperature:.3f}, LR: {lr:.5f}")
 
         return best_state if best_state is not None else self._get_decision_matrix(0.1).numpy()
@@ -283,7 +284,12 @@ class AdvancedHopfieldLayer(Layer):
 
     @classmethod
     def from_config(cls, config):
-        return cls(**config)
+        n = config['n']
+        use_sparse = config.get('use_sparse', False)
+        distance_matrix = config.get('distance_matrix')
+        if distance_matrix is None:
+            distance_matrix = np.zeros((n, n))
+        return cls(n=n, distance_matrix=distance_matrix, use_sparse=use_sparse)
 
 
 @register_keras_serializable()
@@ -537,7 +543,9 @@ class AdvancedHopfieldModel(Model):
 
     @classmethod
     def from_config(cls, config):
-        return cls(**config)
+        n = config['n']
+        use_sparse = config.get('use_sparse', False)
+        return cls(n=n, distance_matrix=np.zeros((n, n)), use_sparse=use_sparse)
 
 
 def train_advanced_model(adjacency_matrix_path: str, use_sparse=False) -> None:

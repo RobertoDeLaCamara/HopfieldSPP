@@ -131,10 +131,11 @@ class HopfieldLayer(Layer):
     @classmethod
     def from_config(cls, config):
         x = config.pop('x')
-        distance_matrix = config.pop('distance_matrix')
-        instance = cls(distance_matrix=distance_matrix, **config)
-        instance.x.assign(tf.constant(x, dtype=tf.float32))
         valid_arcs = config.pop('valid_arcs')
+        distance_matrix = config.pop('distance_matrix')
+        n = config.pop('n')
+        instance = cls(n=n, distance_matrix=distance_matrix)
+        instance.x.assign(tf.constant(x, dtype=tf.float32))
         instance.valid_arcs.assign(tf.constant(valid_arcs, dtype=tf.float32))
         return instance
 
@@ -284,7 +285,9 @@ class HopfieldModel(Model):
 
     @classmethod
     def from_config(cls, config):
-        return cls(**config)
+        n = config['n']
+        distance_matrix = config['distance_matrix']
+        return cls(n=n, distance_matrix=distance_matrix)
 
 
 def train_offline_model(adjacency_matrix_path: str) -> None:

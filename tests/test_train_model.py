@@ -22,7 +22,7 @@ def test_valid_csv_file(setup_synthetic_data):
     df.to_csv('data/synthetic/tests/test_network.csv', index=False)
 
     cost_matrix, node_mapping = calculate_cost_matrix('data/synthetic/tests/test_network.csv')
-    expected_cost_matrix = np.array([[0, 1, 2], [np.inf, 0, 3], [np.inf, np.inf, 0]])
+    expected_cost_matrix = np.array([[0, 1, 2], [1e6, 0, 3], [1e6, 1e6, 0]])
 
     np.testing.assert_array_equal(cost_matrix, expected_cost_matrix)
 

@@ -185,8 +185,9 @@ class ImprovedHopfieldLayer(Layer):
         logits = config.pop('logits')
         valid_arcs = config.pop('valid_arcs')
         distance_matrix = config.pop('distance_matrix')
+        n = config.pop('n')
 
-        instance = cls(distance_matrix=distance_matrix, **config)
+        instance = cls(n=n, distance_matrix=distance_matrix)
         instance.logits.assign(tf.constant(logits, dtype=tf.float32))
         instance.valid_arcs = tf.constant(valid_arcs, dtype=tf.float32)
         return instance
@@ -364,7 +365,9 @@ class ImprovedHopfieldModel(Model):
 
     @classmethod
     def from_config(cls, config):
-        return cls(**config)
+        n = config['n']
+        distance_matrix = config['distance_matrix']
+        return cls(n=n, distance_matrix=distance_matrix)
 
 
 def train_improved_model(adjacency_matrix_path: str) -> None:
