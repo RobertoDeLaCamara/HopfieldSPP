@@ -12,7 +12,8 @@ from collections import deque
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def calculate_cost_matrix(adjacency_matrix):   
+
+def calculate_cost_matrix(adjacency_matrix):
     """
     Calculates the cost matrix for an adjacency matrix of a network given in a CSV file.
     """
@@ -42,10 +43,11 @@ def calculate_cost_matrix(adjacency_matrix):
             logger.error("Missing columns 'origin', 'destination', or 'weight'.")
             raise
         except ValueError:
-            logger.error(f"Invalid cost value on row {_}.")
+            logger.error("Invalid cost value on row %s.", _)
             raise
-    
+
     return cost_matrix, node_to_index
+
 
 @register_keras_serializable()
 class ImprovedHopfieldLayer(Layer):
@@ -54,7 +56,7 @@ class ImprovedHopfieldLayer(Layer):
         self.n = n
         self.distance_matrix = tf.constant(distance_matrix, dtype=tf.float32)
         self.valid_arcs = tf.constant((distance_matrix < 1e6).astype(np.float32), dtype=tf.float32)
-        
+
         # Use logits for better optimization
         self.logits = self.add_weight(
             name="logits",
@@ -62,7 +64,7 @@ class ImprovedHopfieldLayer(Layer):
             initializer=tf.keras.initializers.RandomNormal(mean=-2.0, stddev=0.5),
             trainable=True
         )
-    
+
     def energy(self, source, destination, temperature=0.5):
         """
         Corrected energy function for shortest path with flow conservation.
@@ -70,13 +72,13 @@ class ImprovedHopfieldLayer(Layer):
         # Sigmoid with temperature for soft binary decisions
         x = tf.nn.sigmoid(self.logits / temperature)
         x = x * self.valid_arcs
-        
+
         # Flow conservation constraints (FIXED)
         flow_penalty = 0.0
         for i in range(self.n):
             out_flow = tf.reduce_sum(x[i, :])
             in_flow = tf.reduce_sum(x[:, i])
-            
+
             if i == source:
                 # Source: out_flow - in_flow = 1
                 flow_penalty += tf.square(out_flow - in_flow - 1.0)
@@ -86,27 +88,27 @@ class ImprovedHopfieldLayer(Layer):
             else:
                 # Intermediate: in_flow = out_flow (or both 0)
                 flow_penalty += tf.square(out_flow - in_flow)
-        
+
         # Path cost
         path_cost = tf.reduce_sum(self.distance_matrix * x)
-        
+
         # Binary constraint
         binary_penalty = tf.reduce_sum(x * (1.0 - x))
-        
+
         # Connectivity penalty - ensure destination reachable from source
         connectivity_penalty = self._connectivity_penalty(x, source, destination)
-        
+
         # Normalized combination
         n_edges = tf.reduce_sum(self.valid_arcs)
         normalized_cost = path_cost / (n_edges + 1e-6)
         normalized_flow = flow_penalty / self.n
         normalized_binary = binary_penalty / (self.n * self.n)
-        
-        return (normalized_cost + 
-                10.0 * normalized_flow + 
+
+        return (normalized_cost +
+                10.0 * normalized_flow +
                 5.0 * normalized_binary +
                 20.0 * connectivity_penalty)
-    
+
     def _connectivity_penalty(self, x, source, destination):
         """Penalize if destination is not reachable from source."""
         # Compute reachability via matrix powers
@@ -116,38 +118,38 @@ class ImprovedHopfieldLayer(Layer):
                 reachability + tf.matmul(reachability, x),
                 1.0
             )
-        
+
         # Strong penalty if destination unreachable
         return tf.square(1.0 - reachability[source, destination])
-    
+
     def optimize(self, source, destination, iterations=300, tolerance=1e-6):
         """
         Optimize for specific source-destination pair with early stopping.
         """
         # Fresh optimizer for each query (FIXED)
         optimizer = tf.optimizers.Adam(learning_rate=0.02)
-        
+
         # Reinitialize logits
         self.logits.assign(
             tf.random.normal((self.n, self.n), mean=-2.0, stddev=0.5)
         )
-        
+
         prev_energy = float('inf')
         patience = 20
         no_improvement = 0
-        
+
         logger.info(f"Optimizing path from {source} to {destination}")
-        
+
         for i in range(iterations):
             # Anneal temperature for sharper decisions
             temperature = max(0.1, 1.0 - i / iterations)
-            
+
             with tf.GradientTape() as tape:
                 energy = self.energy(source, destination, temperature)
-            
+
             gradients = tape.gradient(energy, [self.logits])
             optimizer.apply_gradients(zip(gradients, [self.logits]))
-            
+
             # Early stopping
             if abs(prev_energy - energy.numpy()) < tolerance:
                 no_improvement += 1
@@ -157,17 +159,17 @@ class ImprovedHopfieldLayer(Layer):
             else:
                 no_improvement = 0
             prev_energy = energy.numpy()
-            
+
             if i % 50 == 0:
                 logger.info(f"Iteration {i}, Energy: {energy.numpy():.4f}, Temp: {temperature:.3f}")
-        
+
         # Return final soft assignment
         x_final = tf.nn.sigmoid(self.logits / 0.1) * self.valid_arcs
         return x_final
-    
+
     def call(self, inputs, training=False):
         return tf.nn.sigmoid(self.logits) * self.valid_arcs
-    
+
     def get_config(self):
         config = super().get_config()
         config.update({
@@ -183,11 +185,12 @@ class ImprovedHopfieldLayer(Layer):
         logits = config.pop('logits')
         valid_arcs = config.pop('valid_arcs')
         distance_matrix = config.pop('distance_matrix')
-        
+
         instance = cls(distance_matrix=distance_matrix, **config)
         instance.logits.assign(tf.constant(logits, dtype=tf.float32))
         instance.valid_arcs = tf.constant(valid_arcs, dtype=tf.float32)
         return instance
+
 
 @register_keras_serializable()
 class ImprovedHopfieldModel(Model):
@@ -198,10 +201,10 @@ class ImprovedHopfieldModel(Model):
 
     def set_cost_matrix(self, cost_matrix):
         self.cost_matrix = cost_matrix
-        
+
     def get_cost_matrix(self):
         return self.cost_matrix
-    
+
     def _dijkstra_path(self, source, destination):
         """Dijkstra's algorithm for fallback and validation."""
         n = len(self.cost_matrix)
@@ -209,7 +212,7 @@ class ImprovedHopfieldModel(Model):
         dist[source] = 0
         parent = np.full(n, -1)
         visited = set()
-        
+
         for _ in range(n):
             u = None
             for i in range(n):
@@ -218,57 +221,57 @@ class ImprovedHopfieldModel(Model):
             if u is None or dist[u] == np.inf:
                 break
             visited.add(u)
-            
+
             for v in range(n):
                 if self.cost_matrix[u][v] < 1e6:
                     if dist[u] + self.cost_matrix[u][v] < dist[v]:
                         dist[v] = dist[u] + self.cost_matrix[u][v]
                         parent[v] = u
-        
+
         # Reconstruct path
         if dist[destination] == np.inf:
             return None, np.inf
-        
+
         path = []
         current = destination
         while current != -1:
             path.append(current)
             current = parent[current]
         path.reverse()
-        
+
         return path, dist[destination]
-    
+
     def _extract_path_robust(self, state_matrix, source, destination, threshold=0.5):
         """
         Robust path extraction using BFS on edges above threshold.
         """
         n = state_matrix.shape[0]
-        
+
         # Build adjacency list
         adj = {i: [] for i in range(n)}
         for i in range(n):
             for j in range(n):
                 if state_matrix[i, j] > threshold and self.hopfield_layer.valid_arcs[i, j] > 0:
                     adj[i].append((j, state_matrix[i, j]))
-        
+
         # BFS to find path
         queue = deque([(source, [source])])
         visited = {source}
-        
+
         while queue:
             node, path = queue.popleft()
-            
+
             if node == destination:
                 return path
-            
+
             # Sort neighbors by edge weight (prefer higher confidence)
             for next_node, weight in sorted(adj[node], key=lambda x: -x[1]):
                 if next_node not in visited:
                     visited.add(next_node)
                     queue.append((next_node, path + [next_node]))
-        
+
         return None
-    
+
     def _calculate_path_cost(self, path):
         """Calculate total cost of a path."""
         if not path:
@@ -280,66 +283,77 @@ class ImprovedHopfieldModel(Model):
                 return np.inf
             cost += edge_cost
         return cost
-    
+
     def predict(self, source, destination, num_restarts=3, validate=True):
         """
         Predict shortest path with multi-start optimization and fallback.
         """
+        n = self.hopfield_layer.n
+
+        # Validate node indices
+        if source < 0 or source >= n:
+            raise ValueError(f"Source node {source} is out of range [0, {n-1}]")
+        if destination < 0 or destination >= n:
+            raise ValueError(f"Destination node {destination} is out of range [0, {n-1}]")
+
         if source == destination:
             return [source]
-        
+
         best_path = None
         best_cost = float('inf')
-        
+
         # Multi-start optimization
         for restart in range(num_restarts):
             logger.info(f"Restart {restart + 1}/{num_restarts}")
-            
+
             try:
                 # Optimize
                 state_matrix = self.hopfield_layer.optimize(source, destination).numpy()
-                
+
                 # Extract path
                 path = self._extract_path_robust(state_matrix, source, destination)
-                
+
                 if path:
                     cost = self._calculate_path_cost(path)
                     logger.info(f"Found path with cost: {cost:.2f}")
-                    
+
                     if cost < best_cost:
                         best_cost = cost
                         best_path = path
             except Exception as e:
                 logger.warning(f"Restart {restart} failed: {str(e)}")
                 continue
-        
+
         # Fallback to Dijkstra if Hopfield fails or produces suboptimal result
         if validate and self.cost_matrix is not None:
             dijkstra_path, dijkstra_cost = self._dijkstra_path(source, destination)
-            
+
             if dijkstra_path is None:
                 raise ValueError(f"No path exists from {source} to {destination}")
-            
+
             if best_path is None:
                 logger.warning("Hopfield failed, using Dijkstra")
                 return dijkstra_path
-            
+
             # Check if Hopfield solution is acceptable (within 5% of optimal)
             accuracy = (dijkstra_cost / best_cost * 100) if best_cost > 0 else 0
-            logger.info(f"Hopfield cost: {best_cost:.2f}, Dijkstra cost: {dijkstra_cost:.2f}, Accuracy: {accuracy:.1f}%")
-            
+            logger.info(
+                f"Hopfield cost: {best_cost:.2f}, Dijkstra cost: {dijkstra_cost:.2f}, "
+                f"Accuracy: {accuracy:.1f}%"
+            )
+
             if accuracy < 95:
                 logger.warning(f"Hopfield suboptimal ({accuracy:.1f}%), using Dijkstra")
                 return dijkstra_path
-        
+
         if best_path is None:
             raise ValueError(f"Failed to find path from {source} to {destination}")
-        
+
         return best_path
-    
+
     def call(self, inputs, training=False):
         return self.hopfield_layer(inputs, training=training)
-    
+
     def get_config(self):
         config = super().get_config()
         config.update({
@@ -352,13 +366,14 @@ class ImprovedHopfieldModel(Model):
     def from_config(cls, config):
         return cls(**config)
 
+
 def train_improved_model(adjacency_matrix_path: str) -> None:
     """
     Train improved Hopfield model (no meaningless offline training).
     """
     logger.info("Training improved Hopfield model")
     logger.info(f"Adjacency matrix path: {adjacency_matrix_path}")
-    
+
     try:
         cost_matrix, node_mapping = calculate_cost_matrix(adjacency_matrix_path)
     except Exception as e:
@@ -366,7 +381,9 @@ def train_improved_model(adjacency_matrix_path: str) -> None:
         raise
 
     # Normalize cost matrix for numerical stability
-    cost_matrix_normalized = (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
+    cost_matrix_normalized = (
+        (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
+    )
     distance_matrix = cost_matrix_normalized
 
     n = distance_matrix.shape[0]
@@ -375,27 +392,27 @@ def train_improved_model(adjacency_matrix_path: str) -> None:
     # Create model (no offline training needed)
     model = ImprovedHopfieldModel(n, distance_matrix)
     model.set_cost_matrix(cost_matrix)
-    
+
     # Compile for saving
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.02))
-    
+
     # Build model by calling it once
     dummy_input = tf.zeros((1, n, n), dtype=tf.float32)
     model(dummy_input)
 
     # Determine save path
     if 'PYTEST_CURRENT_TEST' in os.environ:
-        model_save_path = "../data/synthetic/tests/"
+        model_save_path = "data/synthetic/tests/"
     else:
-        model_save_path = "../models/"
+        model_save_path = "models/"
 
-    os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
-    
-    logger.info(f"Saving model to: {model_save_path}")  
+    os.makedirs(model_save_path, exist_ok=True)
+
+    logger.info(f"Saving model to: {model_save_path}")
     model.save(model_save_path + 'trained_model_improved.keras')
 
     with open(model_save_path + 'cost_matrix_improved.pkl', 'wb') as f:
-        pickle.dump(cost_matrix, f)    
+        pickle.dump(cost_matrix, f)
     logger.info("Cost matrix saved")
 
     # Verify save

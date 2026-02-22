@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from math import sqrt
 import os
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
@@ -13,7 +12,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def calculate_cost_matrix(adjacency_matrix):   
+
+def calculate_cost_matrix(adjacency_matrix):
     """
     Calculates the cost matrix for an adjacency matrix of a network given in a CSV file.
 
@@ -54,10 +54,11 @@ def calculate_cost_matrix(adjacency_matrix):
             logger.error("Missing columns 'origin', 'destination', or 'weight'.")
             raise
         except ValueError:
-            logger.error(f"Invalid cost value on row {_}.")
+            logger.error("Invalid cost value on row %s.", _)
             raise
-    
+
     return cost_matrix, node_to_index
+
 
 @register_keras_serializable()
 class HopfieldLayer(Layer):
@@ -66,14 +67,16 @@ class HopfieldLayer(Layer):
         self.n = n
         self.distance_matrix = tf.constant(distance_matrix, dtype=tf.float32)
         self.x = self.add_weight(
-            name="x", 
-            shape=(n, n), 
-            initializer="random_uniform", 
+            name="x",
+            shape=(n, n),
+            initializer="random_uniform",
             trainable=True
         )
         self.optimizer = tf.optimizers.Adam(learning_rate=0.01)
-        self.valid_arcs = tf.constant((self.distance_matrix.numpy() != 0).astype(np.float32), dtype=tf.float32)
-                                         
+        self.valid_arcs = tf.constant(
+            (self.distance_matrix.numpy() != 0).astype(np.float32), dtype=tf.float32
+        )
+
     def energy(self):
         mu1 = 1.0
         mu2 = 10.0
@@ -83,8 +86,12 @@ class HopfieldLayer(Layer):
         col_constraint = tf.reduce_sum(tf.square(tf.reduce_sum(self.x, axis=0) - 1))
         binary_constraint = tf.reduce_sum(tf.square(self.x * (1 - self.x)))
         invalid_arcs_penalty = tf.reduce_sum(tf.square(self.x * (1 - self.valid_arcs)))
-        return (mu1/2)*path_cost + (mu2/2)*row_constraint + (mu2/2)*col_constraint + (mu3/2)*binary_constraint + (mu2*5)*invalid_arcs_penalty	
-            
+        return (
+            (mu1 / 2) * path_cost + (mu2 / 2) * row_constraint
+            + (mu2 / 2) * col_constraint + (mu3 / 2) * binary_constraint
+            + (mu2 * 5) * invalid_arcs_penalty
+        )
+
     def fine_tune_with_constraints(self, source, destination, iterations=500):
         logger.info("Initial Energy: %s", self.energy().numpy())
         for i in range(iterations):
@@ -117,7 +124,7 @@ class HopfieldLayer(Layer):
             'n': self.n,
             'distance_matrix': self.distance_matrix.numpy().tolist(),
             'x': self.x.numpy().tolist(),
-            'valid_arcs': self.valid_arcs.numpy().tolist() 
+            'valid_arcs': self.valid_arcs.numpy().tolist()
         })
         return config
 
@@ -131,6 +138,7 @@ class HopfieldLayer(Layer):
         instance.valid_arcs.assign(tf.constant(valid_arcs, dtype=tf.float32))
         return instance
 
+
 @register_keras_serializable()
 class HopfieldModel(Model):
     def __init__(self, n, distance_matrix, **kwargs):
@@ -141,17 +149,17 @@ class HopfieldModel(Model):
 
     def set_cost_matrix(self, cost_matrix):
         self.cost_matrix = cost_matrix
-        
+
     def get_cost_matrix(self):
         return self.cost_matrix
-    
+
     def _dijkstra(self, source, destination):
         """Calculate shortest path cost using Dijkstra's algorithm for validation."""
         n = len(self.cost_matrix)
         dist = np.full(n, np.inf)
         dist[source] = 0
         visited = set()
-        
+
         for _ in range(n):
             u = None
             for i in range(n):
@@ -160,13 +168,13 @@ class HopfieldModel(Model):
             if u is None or dist[u] == np.inf:
                 break
             visited.add(u)
-            
+
             for v in range(n):
                 if self.cost_matrix[u][v] < 1e6:
                     dist[v] = min(dist[v], dist[u] + self.cost_matrix[u][v])
-        
+
         return dist[destination]
-    
+
     def _calculate_path_cost(self, path):
         """Calculate total cost of a path."""
         cost = 0
@@ -176,86 +184,86 @@ class HopfieldModel(Model):
                 return np.inf
             cost += edge_cost
         return cost
-    
+
     def validate_path(self, path, source, destination):
         """Validate path correctness and compare with Dijkstra."""
         if not path or path[0] != source or path[-1] != destination:
             return False, "Invalid path endpoints"
-        
+
         # Check connectivity
         for i in range(len(path) - 1):
             if self.cost_matrix[path[i]][path[i + 1]] >= 1e6:
                 return False, f"Invalid edge between {path[i]} and {path[i+1]}"
-        
+
         # Compare with Dijkstra
         dijkstra_cost = self._dijkstra(source, destination)
         hopfield_cost = self._calculate_path_cost(path)
-        
+
         if dijkstra_cost == np.inf:
             return False, "No path exists between nodes"
-        
+
         accuracy = (dijkstra_cost / hopfield_cost * 100) if hopfield_cost > 0 else 0
         is_optimal = abs(hopfield_cost - dijkstra_cost) < 1e-6
-        
+
         return True, {
             "is_optimal": is_optimal,
             "hopfield_cost": float(hopfield_cost),
             "dijkstra_cost": float(dijkstra_cost),
             "accuracy_percent": float(accuracy)
         }
-    
+
     def train_step(self, data):
         with tf.GradientTape() as tape:
             loss = self.hopfield_layer.energy()
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         return {"loss": loss}
-    
+
     def call(self, inputs, training=False):
         return self.hopfield_layer(inputs, training=training)
-    
+
     def predict(self, source, destination, validate=True):
         if source == destination:
             return [source]
-            
+
         self.hopfield_layer.fine_tune_with_constraints(source, destination)
         state_matrix = tf.round(self.hopfield_layer.x).numpy()
-        
+
         def extract_path(state_matrix, source, destination):
             path = [source]
             current = source
             visited = {source}
             max_steps = len(state_matrix)
-            
+
             for _ in range(max_steps):
                 next_node = np.argmax(state_matrix[current])
-                
+
                 # Check if there's a valid edge
                 if state_matrix[current][next_node] < 0.5:
-                    logger.warning(f"No valid edge from node {current}")
+                    logger.warning("No valid edge from node %s", current)
                     return None
-                
+
                 # Check if we reached destination
                 if next_node == destination:
                     path.append(destination)
                     return path
-                
+
                 # Check for cycles
                 if next_node in visited:
-                    logger.warning(f"Cycle detected at node {next_node}")
+                    logger.warning("Cycle detected at node %s", next_node)
                     return None
-                
+
                 path.append(next_node)
                 visited.add(next_node)
                 current = next_node
-            
-            logger.warning(f"Max steps reached without finding destination")
+
+            logger.warning("Max steps reached without finding destination")
             return None
 
         path = extract_path(state_matrix, source, destination)
         if path is None:
             raise ValueError(f"No valid path found from {source} to {destination}")
-        
+
         if validate and self.cost_matrix is not None:
             is_valid, result = self.validate_path(path, source, destination)
             if is_valid:
@@ -263,9 +271,9 @@ class HopfieldModel(Model):
             else:
                 logger.error(f"Path validation failed: {result}")
                 raise ValueError(f"Invalid path: {result}")
-        
+
         return path
-       
+
     def get_config(self):
         config = super(HopfieldModel, self).get_config()
         config.update({
@@ -278,10 +286,11 @@ class HopfieldModel(Model):
     def from_config(cls, config):
         return cls(**config)
 
+
 def train_offline_model(adjacency_matrix_path: str) -> None:
     logger.info("Training offline model")
     logger.info("Adjacency matrix path: %s", adjacency_matrix_path)
-    
+
     logger.info("Calculating cost matrix")
     try:
         cost_matrix, node_mapping = calculate_cost_matrix(adjacency_matrix_path)
@@ -290,7 +299,9 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
         raise
 
     # Normalize cost matrix
-    cost_matrix_normalized = (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
+    cost_matrix_normalized = (
+        (cost_matrix - np.min(cost_matrix)) / (np.max(cost_matrix) - np.min(cost_matrix) + 1e-6)
+    )
     distance_matrix = cost_matrix_normalized
 
     n = distance_matrix.shape[0]
@@ -313,17 +324,17 @@ def train_offline_model(adjacency_matrix_path: str) -> None:
 
     if 'PYTEST_CURRENT_TEST' in os.environ:
         logger.info("Function is being called by a pytest test")
-        model_save_path = "../data/synthetic/tests/"
+        model_save_path = "data/synthetic/tests/"
     else:
         logger.info("Function is being called during real execution")
-        model_save_path = "../models/"
+        model_save_path = "models/"
 
-    os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
-    logger.info("Saving model to: %s", model_save_path)  
-    model.save(model_save_path +'trained_model.keras')
+    os.makedirs(model_save_path, exist_ok=True)
+    logger.info("Saving model to: %s", model_save_path)
+    model.save(model_save_path + 'trained_model.keras')
 
     with open(model_save_path + 'cost_matrix.pkl', 'wb') as f:
-        pickle.dump(cost_matrix, f)    
+        pickle.dump(cost_matrix, f)
     logger.info("Cost matrix saved")
 
     with open(model_save_path + 'cost_matrix.pkl', 'rb') as f:

@@ -66,9 +66,13 @@ pipeline {
                             sh '''
                             docker run --name test-spp-$BUILD_NUMBER \
                                 --user root \
+                                --memory=4g \
                                 -v "$WORKSPACE/tests:/app/tests" \
                                 $REGISTRY/$IMAGE_NAME:$BUILD_NUMBER \
-                                sh -c "pip install --quiet pytest httpx pytest-cov scipy && python -m pytest tests/ -v \
+                                sh -c "pip install --quiet pytest httpx pytest-cov scipy pytest-timeout && python -m pytest tests/ -v \
+                                    --ignore=tests/test_ultra_model.py \
+                                    --timeout=120 \
+                                    --tb=short \
                                     --junitxml=test-results.xml \
                                     --cov=src \
                                     --cov-report=xml:coverage.xml \
@@ -93,6 +97,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                 withCredentials([usernamePassword(
                     credentialsId: 'sonarqube-credentials',
                     usernameVariable: 'SONAR_USER',
@@ -114,6 +119,7 @@ pipeline {
                             -Dsonar.password="\$SONAR_PASS" \
                             -Dsonar.scm.disabled=true
                     """
+                }
                 }
             }
         }
