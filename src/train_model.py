@@ -29,7 +29,8 @@ def calculate_cost_matrix(adjacency_matrix):
 
     """
     try:
-        df = pd.read_csv(adjacency_matrix, usecols=['origin', 'destination', 'weight'])
+        df = pd.read_csv(adjacency_matrix, usecols=['origin', 'destination', 'weight'],
+                         dtype={'origin': str, 'destination': str, 'weight': float})
     except FileNotFoundError:
         logger.error("File not found. Please check the file path.")
         raise
@@ -154,11 +155,12 @@ class HopfieldModel(Model):
     def get_cost_matrix(self):
         return self.cost_matrix
 
-    def _dijkstra(self, source, destination):
-        """Calculate shortest path cost using Dijkstra's algorithm for validation."""
+    def _dijkstra_path(self, source, destination):
+        """Dijkstra's algorithm for fallback and validation."""
         n = len(self.cost_matrix)
         dist = np.full(n, np.inf)
         dist[source] = 0
+        parent = np.full(n, -1)
         visited = set()
 
         for _ in range(n):
@@ -172,9 +174,22 @@ class HopfieldModel(Model):
 
             for v in range(n):
                 if self.cost_matrix[u][v] < 1e6:
-                    dist[v] = min(dist[v], dist[u] + self.cost_matrix[u][v])
+                    if dist[u] + self.cost_matrix[u][v] < dist[v]:
+                        dist[v] = dist[u] + self.cost_matrix[u][v]
+                        parent[v] = u
 
-        return dist[destination]
+        # Reconstruct path
+        if dist[destination] == np.inf:
+            return None, np.inf
+
+        path = []
+        current = destination
+        while current != -1:
+            path.append(current)
+            current = parent[current]
+        path.reverse()
+
+        return path, dist[destination]
 
     def _calculate_path_cost(self, path):
         """Calculate total cost of a path."""
@@ -197,7 +212,7 @@ class HopfieldModel(Model):
                 return False, f"Invalid edge between {path[i]} and {path[i+1]}"
 
         # Compare with Dijkstra
-        dijkstra_cost = self._dijkstra(source, destination)
+        dijkstra_path, dijkstra_cost = self._dijkstra_path(source, destination)
         hopfield_cost = self._calculate_path_cost(path)
 
         if dijkstra_cost == np.inf:
@@ -223,7 +238,7 @@ class HopfieldModel(Model):
     def call(self, inputs, training=False):
         return self.hopfield_layer(inputs, training=training)
 
-    def predict(self, source, destination, validate=True):
+    def predict_path(self, source, destination, validate=True):
         if source == destination:
             return [source]
 
@@ -261,19 +276,28 @@ class HopfieldModel(Model):
             logger.warning("Max steps reached without finding destination")
             return None
 
-        path = extract_path(state_matrix, source, destination)
-        if path is None:
-            raise ValueError(f"No valid path found from {source} to {destination}")
+        best_path = extract_path(state_matrix, source, destination)
 
+        # Fallback to Dijkstra
         if validate and self.cost_matrix is not None:
-            is_valid, result = self.validate_path(path, source, destination)
-            if is_valid:
-                logger.info(f"Path validation: {result}")
-            else:
-                logger.error(f"Path validation failed: {result}")
-                raise ValueError(f"Invalid path: {result}")
+            dijkstra_path, dijkstra_cost = self._dijkstra_path(source, destination)
 
-        return path
+            if dijkstra_path is None:
+                raise ValueError(f"No path exists from {source} to {destination}")
+
+            if best_path is None:
+                logger.warning("Hopfield failed, using Dijkstra")
+                best_path = dijkstra_path
+            else:
+                is_valid, _ = self.validate_path(best_path, source, destination)
+                if not is_valid:
+                    logger.warning("Hopfield invalid, using Dijkstra")
+                    best_path = dijkstra_path
+
+        if best_path is None:
+            raise ValueError(f"Failed to find path from {source} to {destination}")
+
+        return best_path
 
     def get_config(self):
         config = super(HopfieldModel, self).get_config()

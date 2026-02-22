@@ -77,7 +77,7 @@ HopfieldSPP solves the shortest path problem by minimizing an energy function th
 git clone https://github.com/yourusername/HopfieldSPP.git
 cd HopfieldSPP
 
-# Install dependencies
+# Install dependencies (uses tensorflow-cpu for stability on linux/WSL)
 pip install -r requirements.txt
 ```
 
@@ -124,7 +124,7 @@ path = model.predict(
 ### REST API
 
 ```bash
-# Start API server
+# Start API server (Recommended)
 python3 src/main_improved.py
 
 # Load network
@@ -143,7 +143,7 @@ Response:
 }
 ```
 
-## 🧪 Testing
+## 🧪 Testing & Examples
 
 ```bash
 # Run all tests
@@ -152,50 +152,33 @@ python3 -m pytest tests/ -v
 # Run specific test suite
 python3 -m pytest tests/test_improved_model.py -v
 
-# Run demos
-python3 demo_improvements.py
-python3 demo_advanced.py
+# Run demos (moved to examples/)
+python3 examples/demo_improvements.py
+python3 examples/demo_advanced.py
 
 # Run benchmarks
-python3 compare_models.py
-python3 benchmark_all.py
+python3 examples/compare_models.py
+python3 examples/benchmark_all.py
 ```
 
 ## 📁 Repository Structure
 
 ```
 HopfieldSPP/
-├── src/
-│   ├── train_model.py              # Original (deprecated)
-│   ├── train_model_improved.py     # Phase 1: Critical fixes ✅
-│   ├── train_model_advanced.py     # Phase 2: Advanced features ✅
-│   ├── main.py                     # Original API
-│   ├── main_improved.py            # Improved API with caching ✅
-│   └── utils/
-│       └── visualize_graph.py
-├── tests/
-│   ├── test_train_model.py
-│   ├── test_main.py
-│   └── test_improved_model.py      # Improved model tests ✅
-├── data/
-│   ├── synthetic/
-│   │   └── synthetic_network.csv
-│   └── openAPIs/
-│       └── serverAPI.yaml
-├── models/                         # Pre-trained models
-├── notebooks/                      # Jupyter notebooks
-├── demo_improvements.py            # Phase 1 demo ✅
-├── demo_advanced.py                # Phase 2 demo ✅
-├── compare_models.py               # Benchmark script ✅
-├── benchmark_all.py                # Comprehensive benchmark ✅
-├── visual_comparison.py            # Algorithm visualization ✅
-├── IMPROVEMENTS.md                 # Phase 1 documentation ✅
-├── ADVANCED_IMPROVEMENTS.md        # Phase 2 documentation ✅
-├── COMPLETE_SUMMARY.md             # Full summary ✅
-├── INDEX.md                        # Navigation guide ✅
-└── README.md                       # This file
-
-✅ = New/improved files
+├── src/                    # Core library code
+│   ├── train_model.py          # Original (deprecated, now with fallback)
+│   ├── train_model_improved.py # Phase 1: Critical fixes ✅
+│   ├── train_model_ultra.py    # Phase 2: Ultra optimizations ✅
+│   ├── main.py                 # Original API
+│   └── main_improved.py        # Improved API with caching ✅
+├── tests/                  # Pytest suite
+├── data/                   # Synthetic and real network data
+├── docs/                   # Detailed documentation and summaries ✅
+├── examples/               # Demo scripts and benchmarks ✅
+├── models/                 # Pre-trained models
+├── notebooks/              # Jupyter notebooks for exploration
+├── requirements.txt        # Updated for CPU stability ✅
+└── README.md
 ```
 
 ## 🎓 Algorithm
@@ -385,11 +368,11 @@ curl -X GET "http://localhost:63235/calculateShortestPath?origin=1&destination=1
 ## 📚 Documentation
 
 ### Quick Links
-- **[INDEX.md](INDEX.md)** - Navigation guide to all documentation
-- **[COMPLETE_SUMMARY.md](COMPLETE_SUMMARY.md)** - Full overview of improvements
-- **[IMPROVEMENTS.md](IMPROVEMENTS.md)** - Phase 1 critical fixes
-- **[ADVANCED_IMPROVEMENTS.md](ADVANCED_IMPROVEMENTS.md)** - Phase 2 optimizations
-- **[README_IMPROVEMENTS.md](README_IMPROVEMENTS.md)** - Quick start guide
+- **[INDEX.md](docs/INDEX.md)** - Navigation guide to all documentation
+- **[COMPLETE_SUMMARY.md](docs/COMPLETE_SUMMARY.md)** - Full overview of improvements
+- **[IMPROVEMENTS.md](docs/IMPROVEMENTS.md)** - Phase 1 critical fixes
+- **[ADVANCED_IMPROVEMENTS.md](docs/ADVANCED_IMPROVEMENTS.md)** - Phase 2 optimizations
+- **[README_IMPROVEMENTS.md](docs/README_IMPROVEMENTS.md)** - Quick start guide
 
 ### What's New
 The repository includes two major improvement phases:

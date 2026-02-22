@@ -250,7 +250,7 @@ class UltraHopfieldModel(Model):
             cost += edge_cost
         return cost
 
-    def predict(self, source, destination, num_restarts=3, validate=True, use_cache=True):
+    def predict_path(self, source, destination, num_restarts=3, validate=True, use_cache=True):
         """
         Predict with caching and parallel multi-start.
         """
@@ -313,7 +313,7 @@ class UltraHopfieldModel(Model):
         """Process multiple queries (can be parallelized on GPU)."""
         results = []
         for source, dest in queries:
-            path = self.predict(source, dest, num_restarts=2, use_cache=use_cache)
+            path = self.predict_path(source, dest, num_restarts=2, use_cache=use_cache)
             cost = self._calculate_path_cost(path)
             results.append((path, cost))
         return results
@@ -371,7 +371,8 @@ def create_ultra_model(adjacency_matrix_path, coordinates=None):
     """
     import pandas as pd
 
-    df = pd.read_csv(adjacency_matrix_path, usecols=['origin', 'destination', 'weight'])
+    df = pd.read_csv(adjacency_matrix_path, usecols=['origin', 'destination', 'weight'],
+                     dtype={'origin': str, 'destination': str, 'weight': float})
     nodos = sorted(pd.unique(df[['origin', 'destination']].values.ravel()))
     node_to_index = {node: idx for idx, node in enumerate(nodos)}
     n = len(nodos)

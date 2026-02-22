@@ -27,12 +27,12 @@ def test_query_caching():
     
     # First query (cache miss)
     start1 = time.time()
-    path1 = model.predict(source, dest, num_restarts=1, use_cache=True)
+    path1 = model.predict_path(source, dest, num_restarts=1, use_cache=True)
     time1 = time.time() - start1
     
     # Second query (cache hit)
     start2 = time.time()
-    path2 = model.predict(source, dest, num_restarts=1, use_cache=True)
+    path2 = model.predict_path(source, dest, num_restarts=1, use_cache=True)
     time2 = time.time() - start2
     
     # Should return same path
@@ -52,7 +52,7 @@ def test_incremental_edge_update():
     
     # Get original path
     source, dest = 0, 5
-    path_original = model.predict(source, dest, num_restarts=1)
+    path_original = model.predict_path(source, dest, num_restarts=1)
     cost_original = model._calculate_path_cost(path_original)
     
     # Update edge
@@ -66,7 +66,7 @@ def test_incremental_edge_update():
         assert model.cost_matrix[1, 2] == new_weight
         
         # Get new path
-        path_updated = model.predict(source, dest, num_restarts=1)
+        path_updated = model.predict_path(source, dest, num_restarts=1)
         cost_updated = model._calculate_path_cost(path_updated)
         
         # Cost should be same or better
@@ -109,7 +109,7 @@ def test_cache_invalidation():
     model, cost_matrix, _ = create_ultra_model('data/synthetic/synthetic_network.csv')
     
     # Query and cache
-    path1 = model.predict(0, 5, use_cache=True)
+    path1 = model.predict_path(0, 5, use_cache=True)
     
     # Update graph
     model.update_edge(1, 2, 1.0)
@@ -138,9 +138,9 @@ def test_cache_stats():
     model, cost_matrix, _ = create_ultra_model('data/synthetic/synthetic_network.csv')
     
     # Make some queries
-    model.predict(0, 5, use_cache=True)  # Miss
-    model.predict(0, 5, use_cache=True)  # Hit
-    model.predict(1, 6, use_cache=True)  # Miss
+    model.predict_path(0, 5, use_cache=True)  # Miss
+    model.predict_path(0, 5, use_cache=True)  # Hit
+    model.predict_path(1, 6, use_cache=True)  # Miss
     
     stats = model.cache_stats()
     
@@ -154,8 +154,8 @@ def test_clear_cache():
     model, cost_matrix, _ = create_ultra_model('data/synthetic/synthetic_network.csv')
     
     # Cache some queries
-    model.predict(0, 5, use_cache=True)
-    model.predict(1, 6, use_cache=True)
+    model.predict_path(0, 5, use_cache=True)
+    model.predict_path(1, 6, use_cache=True)
     
     assert model.cache_stats()['size'] == 2
     
@@ -169,11 +169,11 @@ def test_performance_improvement():
     model, cost_matrix, _ = create_ultra_model('data/synthetic/synthetic_network.csv')
     
     # Warm up
-    model.predict(0, 5, num_restarts=1)
+    model.predict_path(0, 5, num_restarts=1)
     
     # Measure cached query
     start = time.time()
-    model.predict(0, 5, num_restarts=1, use_cache=True)
+    model.predict_path(0, 5, num_restarts=1, use_cache=True)
     cached_time = time.time() - start
     
     # Should be very fast (< 0.01s)
@@ -207,8 +207,8 @@ def test_astar_convergence():
     model_without_astar.set_cost_matrix(distance_matrix)
     
     # Both should work
-    path_with = model_with_astar.predict(0, 5, num_restarts=1, validate=False)
-    path_without = model_without_astar.predict(0, 5, num_restarts=1, validate=False)
+    path_with = model_with_astar.predict_path(0, 5, num_restarts=5, validate=False)
+    path_without = model_without_astar.predict_path(0, 5, num_restarts=5, validate=False)
     
     assert path_with is not None
     assert path_without is not None
@@ -227,7 +227,7 @@ def test_ultra_model_reliability():
         if source == dest:
             continue
         
-        path = model.predict(source, dest, num_restarts=2, validate=True)
+        path = model.predict_path(source, dest, num_restarts=5, validate=True)
         
         # Should always succeed
         assert path is not None

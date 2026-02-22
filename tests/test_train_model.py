@@ -109,7 +109,7 @@ def test_hopfield_model_predict():
     model.set_cost_matrix(distance_matrix)
     source, destination = 0, 1
     try:
-        path = model.predict(source, destination)
+        path = model.predict_path(source, destination)
         assert isinstance(path, list)
     except ValueError:
         # Stochastic model may not always find a valid path

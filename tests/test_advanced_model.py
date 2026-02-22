@@ -115,7 +115,7 @@ def test_advanced_model_predict():
     model = AdvancedHopfieldModel(n, cost_matrix_normalized, use_sparse=False)
     model.set_cost_matrix(cost_matrix)
 
-    path = model.predict(
+    path = model.predict_path(
         source=0,
         destination=min(5, n-1),
         num_restarts=2,
@@ -250,11 +250,11 @@ def test_beam_search_vs_greedy():
     source, dest = 0, min(8, n-1)
 
     # With beam search (use validate=True for Dijkstra fallback)
-    path_beam = model.predict(source, dest, num_restarts=2, use_beam_search=True, validate=True)
+    path_beam = model.predict_path(source, dest, num_restarts=2, use_beam_search=True, validate=True)
     cost_beam = model._calculate_path_cost(path_beam) if path_beam else float('inf')
 
     # Without beam search
-    path_greedy = model.predict(source, dest, num_restarts=2, use_beam_search=False, validate=True)
+    path_greedy = model.predict_path(source, dest, num_restarts=2, use_beam_search=False, validate=True)
     cost_greedy = model._calculate_path_cost(path_greedy) if path_greedy else float('inf')
 
     # Both should find valid paths; beam search should be at least comparable
@@ -279,7 +279,7 @@ def test_advanced_optimal_quality():
         if source == dest:
             continue
 
-        path = model.predict(source, dest, num_restarts=2, validate=True, use_beam_search=True)
+        path = model.predict_path(source, dest, num_restarts=2, validate=True, use_beam_search=True)
         cost = model._calculate_path_cost(path)
         _, dijkstra_cost = model._dijkstra_path(source, dest)
 

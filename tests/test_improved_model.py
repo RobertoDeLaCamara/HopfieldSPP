@@ -83,7 +83,7 @@ def test_improved_model_predict():
 
     # Test prediction
     source, destination = 0, min(5, n-1)
-    path = model.predict(source, destination, num_restarts=2, validate=True)
+    path = model.predict_path(source, destination, num_restarts=2, validate=True)
 
     assert path is not None
     assert len(path) >= 2
@@ -135,7 +135,7 @@ def test_multi_start_optimization():
     source, destination = 0, min(8, n-1)
 
     # Multiple restarts should find a valid path
-    path_multi = model.predict(source, destination, num_restarts=3, validate=True)
+    path_multi = model.predict_path(source, destination, num_restarts=3, validate=True)
     assert path_multi is not None
     assert path_multi[0] == source
     assert path_multi[-1] == destination
@@ -160,7 +160,7 @@ def test_same_source_destination():
     model = ImprovedHopfieldModel(n, cost_matrix_normalized)
     model.set_cost_matrix(cost_matrix)
 
-    path = model.predict(source=0, destination=0, validate=True)
+    path = model.predict_path(source=0, destination=0, validate=True)
 
     assert path == [0]
 
@@ -176,10 +176,10 @@ def test_invalid_node_indices():
 
     # Test out of range
     with pytest.raises(ValueError):
-        model.predict(source=-1, destination=0, validate=True)
+        model.predict_path(source=-1, destination=0, validate=True)
 
     with pytest.raises(ValueError):
-        model.predict(source=0, destination=n+10, validate=True)
+        model.predict_path(source=0, destination=n+10, validate=True)
 
 
 def test_disconnected_graph():
@@ -201,7 +201,7 @@ def test_disconnected_graph():
 
     # Should raise error or return None for disconnected nodes
     with pytest.raises(ValueError):
-        model.predict(source=0, destination=5, validate=True)
+        model.predict_path(source=0, destination=5, validate=True)
 
 
 def test_path_cost_calculation():
@@ -252,10 +252,10 @@ def test_model_caching():
     model.set_cost_matrix(cost_matrix)
 
     # First prediction
-    path1 = model.predict(source=0, destination=min(5, n-1), num_restarts=1, validate=True)
+    path1 = model.predict_path(source=0, destination=min(5, n-1), num_restarts=1, validate=True)
 
     # Second prediction (should work independently)
-    path2 = model.predict(source=1, destination=min(6, n-1), num_restarts=1, validate=True)
+    path2 = model.predict_path(source=1, destination=min(6, n-1), num_restarts=1, validate=True)
 
     assert path1 is not None
     assert path2 is not None
@@ -281,7 +281,7 @@ def test_optimal_solution_quality():
         if source == destination:
             continue
 
-        path = model.predict(source, destination, num_restarts=2, validate=True)
+        path = model.predict_path(source, destination, num_restarts=2, validate=True)
         hopfield_cost = model._calculate_path_cost(path)
         _, dijkstra_cost = model._dijkstra_path(source, destination)
 

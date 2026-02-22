@@ -72,11 +72,11 @@ def benchmark_model(model_class, model_name, cost_matrix, queries, **kwargs):
             start = time.time()
             
             if model_name == "Original":
-                path = model.predict(source, dest, validate=False)
+                path = model.predict_path(source, dest, validate=False)
             elif model_name == "Improved":
-                path = model.predict(source, dest, num_restarts=2, validate=True)
+                path = model.predict_path(source, dest, num_restarts=2, validate=True)
             else:  # Advanced
-                path = model.predict(source, dest, num_restarts=2, validate=True, use_beam_search=True)
+                path = model.predict_path(source, dest, num_restarts=2, validate=True, use_beam_search=True)
             
             query_time = time.time() - start
             cost = model._calculate_path_cost(path)

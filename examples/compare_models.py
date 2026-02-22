@@ -75,7 +75,7 @@ def compare_models(network_file='data/synthetic/synthetic_network.csv', num_quer
         print("\n[Original Model]")
         try:
             start = time.time()
-            path_orig = original_model.predict(source, dest, validate=False)
+            path_orig = original_model.predict_path(source, dest, validate=False)
             time_orig = time.time() - start
             cost_orig = original_model._calculate_path_cost(path_orig)
             
@@ -95,7 +95,7 @@ def compare_models(network_file='data/synthetic/synthetic_network.csv', num_quer
         print("\n[Improved Model]")
         try:
             start = time.time()
-            path_impr = improved_model.predict(source, dest, num_restarts=2, validate=True)
+            path_impr = improved_model.predict_path(source, dest, num_restarts=2, validate=True)
             time_impr = time.time() - start
             cost_impr = improved_model._calculate_path_cost(path_impr)
             

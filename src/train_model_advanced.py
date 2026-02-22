@@ -470,7 +470,7 @@ class AdvancedHopfieldModel(Model):
             cost += edge_cost
         return cost
 
-    def predict(self, source, destination, num_restarts=3, validate=True, use_beam_search=True):
+    def predict_path(self, source, destination, num_restarts=3, validate=True, use_beam_search=True):
         """
         Predict shortest path with advanced strategies.
         """

@@ -61,7 +61,7 @@ def demo():
         
         # Get Hopfield solution
         try:
-            hopfield_path = model.predict(source, dest, num_restarts=2, validate=True)
+            hopfield_path = model.predict_path(source, dest, num_restarts=2, validate=True)
             hopfield_cost = model._calculate_path_cost(hopfield_path)
             
             print(f"\n   Hopfield (improved):")

@@ -74,7 +74,7 @@ def demo_advanced_features():
         # Test with beam search
         print(f"\n   [Advanced Hopfield - Beam Search]")
         try:
-            path_beam = model.predict(
+            path_beam = model.predict_path(
                 source, dest,
                 num_restarts=2,
                 validate=True,
@@ -96,7 +96,7 @@ def demo_advanced_features():
         # Test without beam search (for comparison)
         print(f"\n   [Advanced Hopfield - Without Beam Search]")
         try:
-            path_no_beam = model.predict(
+            path_no_beam = model.predict_path(
                 source, dest,
                 num_restarts=2,
                 validate=True,

@@ -89,7 +89,7 @@ def get_shortest_path(origin, destination):
             raise ValueError(f"Destination node {destination} is out of range [0, {n-1}]")
 
         # Make prediction
-        path = loaded_model.predict(origin, destination)
+        path = loaded_model.predict_path(origin, destination)
         if not path:
             raise RuntimeError("Model prediction returned an empty path.")
         logger.info(f"Predicted Path: {path}")

@@ -18,7 +18,8 @@ def calculate_cost_matrix(adjacency_matrix):
     Calculates the cost matrix for an adjacency matrix of a network given in a CSV file.
     """
     try:
-        df = pd.read_csv(adjacency_matrix, usecols=['origin', 'destination', 'weight'])
+        df = pd.read_csv(adjacency_matrix, usecols=['origin', 'destination', 'weight'],
+                         dtype={'origin': str, 'destination': str, 'weight': float})
     except FileNotFoundError:
         logger.error("File not found. Please check the file path.")
         raise
@@ -49,20 +50,23 @@ def calculate_cost_matrix(adjacency_matrix):
     return cost_matrix, node_to_index
 
 
-@register_keras_serializable()
+# @register_keras_serializable()
 class ImprovedHopfieldLayer(Layer):
     def __init__(self, n, distance_matrix, **kwargs):
         super().__init__(**kwargs)
         self.n = n
-        self.distance_matrix = tf.constant(distance_matrix, dtype=tf.float32)
-        self.valid_arcs = tf.constant((distance_matrix < 1e6).astype(np.float32), dtype=tf.float32)
+        dist_np = np.array(distance_matrix, dtype=np.float32)
+        valid_np = (dist_np < 1e6).astype(np.float32)
+        
+        # Use tf.convert_to_tensor instead of tf.constant to avoid memory sharing issues
+        self.distance_matrix = tf.convert_to_tensor(dist_np, dtype=tf.float32)
+        self.valid_arcs = tf.convert_to_tensor(valid_np, dtype=tf.float32)
 
-        # Use logits for better optimization
-        self.logits = self.add_weight(
-            name="logits",
-            shape=(n, n),
-            initializer=tf.keras.initializers.RandomNormal(mean=-2.0, stddev=0.5),
-            trainable=True
+        # Use tf.Variable instead of add_weight to avoid CPU segfaults
+        self.logits = tf.Variable(
+            initial_value=tf.random.normal(shape=(n, n), mean=-2.0, stddev=0.5),
+            trainable=True,
+            name="logits"
         )
 
     def energy(self, source, destination, temperature=0.5):
@@ -285,7 +289,7 @@ class ImprovedHopfieldModel(Model):
             cost += edge_cost
         return cost
 
-    def predict(self, source, destination, num_restarts=3, validate=True):
+    def predict_path(self, source, destination, num_restarts=3, validate=True):
         """
         Predict shortest path with multi-start optimization and fallback.
         """

@@ -47,7 +47,7 @@ def demo_ultra_features():
     
     for i, (source, dest) in enumerate(queries):
         start = time.time()
-        path = model.predict(source, dest, num_restarts=2, use_cache=True)
+        path = model.predict_path(source, dest, num_restarts=2, use_cache=True)
         elapsed = time.time() - start
         cost = model._calculate_path_cost(path)
         
@@ -68,7 +68,7 @@ def demo_ultra_features():
     
     # Original path
     print(f"\n   Original graph:")
-    path_original = model.predict(source, dest, num_restarts=2)
+    path_original = model.predict_path(source, dest, num_restarts=2)
     cost_original = model._calculate_path_cost(path_original)
     print(f"     Path {source} → {dest}: {path_original}")
     print(f"     Cost: {cost_original:.2f}")
@@ -81,7 +81,7 @@ def demo_ultra_features():
         model.update_edge(1, 2, new_cost)
         
         # New path after update
-        path_updated = model.predict(source, dest, num_restarts=2)
+        path_updated = model.predict_path(source, dest, num_restarts=2)
         cost_updated = model._calculate_path_cost(path_updated)
         print(f"     New path: {path_updated}")
         print(f"     New cost: {cost_updated:.2f}")
@@ -96,7 +96,7 @@ def demo_ultra_features():
     # Compare with and without A* (simulated by comparing iterations)
     print(f"\n   With A* heuristic:")
     start = time.time()
-    path_astar = model.predict(3, 8, num_restarts=1)
+    path_astar = model.predict_path(3, 8, num_restarts=1)
     time_astar = time.time() - start
     print(f"     Time: {time_astar:.4f}s")
     print(f"     Path: {path_astar}")
