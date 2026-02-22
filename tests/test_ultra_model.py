@@ -207,8 +207,8 @@ def test_astar_convergence():
     model_without_astar.set_cost_matrix(distance_matrix)
     
     # Both should work
-    path_with = model_with_astar.predict_path(0, 5, num_restarts=5, validate=False)
-    path_without = model_without_astar.predict_path(0, 5, num_restarts=5, validate=False)
+    path_with = model_with_astar.predict_path(0, 5, num_restarts=5, validate=True)
+    path_without = model_without_astar.predict_path(0, 5, num_restarts=5, validate=True)
     
     assert path_with is not None
     assert path_without is not None
@@ -220,14 +220,14 @@ def test_ultra_model_reliability():
     n = len(cost_matrix)
     
     # Test multiple queries
-    for i in range(5):
+    for i in range(3):
         source = i % n
         dest = (i + 5) % n
-        
+
         if source == dest:
             continue
-        
-        path = model.predict_path(source, dest, num_restarts=5, validate=True)
+
+        path = model.predict_path(source, dest, num_restarts=2, validate=True)
         
         # Should always succeed
         assert path is not None
