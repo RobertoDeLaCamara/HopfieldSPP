@@ -57,7 +57,7 @@ class ImprovedHopfieldLayer(Layer):
         self.n = n
         dist_np = np.array(distance_matrix, dtype=np.float32)
         valid_np = (dist_np < 1e6).astype(np.float32)
-        
+
         # Use tf.convert_to_tensor instead of tf.constant to avoid memory sharing issues
         self.distance_matrix = tf.convert_to_tensor(dist_np, dtype=tf.float32)
         self.valid_arcs = tf.convert_to_tensor(valid_np, dtype=tf.float32)
