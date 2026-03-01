@@ -74,7 +74,7 @@ HopfieldSPP solves the shortest path problem by minimizing an energy function th
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/HopfieldSPP.git
+git clone https://github.com/RobertoDeLaCamara/HopfieldSPP.git
 cd HopfieldSPP
 
 # Install dependencies (uses tensorflow-cpu for stability on linux/WSL)
@@ -449,7 +449,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/HopfieldSPP/issues)
+- **Issues**: [GitHub Issues](https://github.com/RobertoDeLaCamara/HopfieldSPP/issues)
 - **Documentation**: See [INDEX.md](INDEX.md) for navigation
 - **Examples**: Run demo scripts in the repository
 
