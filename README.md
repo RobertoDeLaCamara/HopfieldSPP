@@ -391,7 +391,7 @@ The repository includes two major improvement phases:
 - ✅ Beam search extraction
 - ✅ Learning rate scheduling
 
-See [COMPLETE_SUMMARY.md](COMPLETE_SUMMARY.md) for full details.
+See [COMPLETE_SUMMARY.md](docs/COMPLETE_SUMMARY.md) for full details.
 
 ---
 
@@ -450,7 +450,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/RobertoDeLaCamara/HopfieldSPP/issues)
-- **Documentation**: See [INDEX.md](INDEX.md) for navigation
+- **Documentation**: See [INDEX.md](docs/INDEX.md) for navigation
 - **Examples**: Run demo scripts in the repository
 
 ---
@@ -495,8 +495,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
    ```
 
 4. **Read the docs**:
-   - Start with [INDEX.md](INDEX.md) for navigation
-   - See [README_IMPROVEMENTS.md](README_IMPROVEMENTS.md) for quick start
+   - Start with [INDEX.md](docs/INDEX.md) for navigation
+   - See [README_IMPROVEMENTS.md](docs/README_IMPROVEMENTS.md) for quick start
 
 ---
 
