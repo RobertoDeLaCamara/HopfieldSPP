@@ -1,6 +1,6 @@
 fastapi == 0.129.0
 uvicorn == 0.34.0
-python-multipart == 0.0.22
+python-multipart == 0.0.26
 tensorflow-cpu == 2.20.0
 numpy == 1.26.4
 pydantic == 2.10.4
