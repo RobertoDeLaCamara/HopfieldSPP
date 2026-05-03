@@ -112,7 +112,7 @@ pipeline {
                             -Dsonar.projectKey=HopfieldSPP \
                             -Dsonar.sources=src \
                             -Dsonar.tests=tests \
-                            -Dsonar.python.version=3.10 \
+                            -Dsonar.python.version=3.11 \
                             -Dsonar.python.coverage.reportPaths=coverage.xml \
                             -Dsonar.host.url=http://192.168.1.147:9000 \
                             -Dsonar.login="\$SONAR_USER" \
