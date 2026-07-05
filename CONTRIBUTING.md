@@ -43,7 +43,7 @@ All new code should include tests. Aim to maintain or improve coverage.
 - **Models:** Three versions exist (Original, Improved, Advanced). The Improved model is recommended for most work.
 - **Training:** `python src/train_model_improved.py`
 - **API:** `python src/main_improved.py` (FastAPI with caching)
-- **Benchmarks:** `python benchmark_all.py`
+- **Benchmarks:** `python examples/benchmark_all.py`
 
 ## Code Style
 
