@@ -125,12 +125,12 @@ python3 -m pytest tests/test_improved_model.py -v
 
 Run the demo:
 ```bash
-python3 demo_improvements.py
+python3 examples/demo_improvements.py
 ```
 
 Compare models:
 ```bash
-python3 compare_models.py
+python3 examples/compare_models.py
 ```
 
 ## Usage Example

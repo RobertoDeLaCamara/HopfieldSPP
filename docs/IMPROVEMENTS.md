@@ -142,7 +142,7 @@ python src/main_improved.py
 
 ### Compare Models
 ```bash
-python compare_models.py
+python examples/compare_models.py
 ```
 
 ### Run Tests

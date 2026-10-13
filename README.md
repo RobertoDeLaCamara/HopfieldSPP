@@ -3,7 +3,7 @@
 Neural network-based shortest path solver using Hopfield Networks with energy function minimization.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![TensorFlow 2.18](https://img.shields.io/badge/tensorflow-2.18-orange.svg)](https://www.tensorflow.org/)
+[![TensorFlow 2.20](https://img.shields.io/badge/tensorflow-2.20-orange.svg)](https://www.tensorflow.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
 ## 🚀 Quick Start
@@ -414,19 +414,19 @@ See [COMPLETE_SUMMARY.md](docs/COMPLETE_SUMMARY.md) for full details.
 
 ```bash
 # See Phase 1 improvements
-python3 demo_improvements.py
+python3 examples/demo_improvements.py
 
 # See Phase 2 advanced features
-python3 demo_advanced.py
+python3 examples/demo_advanced.py
 
 # Visual algorithm comparison
-python3 visual_comparison.py
+python3 examples/visual_comparison.py
 
 # Benchmark Original vs Improved
-python3 compare_models.py
+python3 examples/compare_models.py
 
 # Benchmark all three versions
-python3 benchmark_all.py
+python3 examples/benchmark_all.py
 ```
 
 ---
@@ -486,7 +486,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 2. **Run a demo**:
    ```bash
-   python3 demo_improvements.py
+   python3 examples/demo_improvements.py
    ```
 
 3. **Try the API**:

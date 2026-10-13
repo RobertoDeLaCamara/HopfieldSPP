@@ -4,7 +4,7 @@
 
 ### Prerequisites
 - Python 3.10+
-- TensorFlow 2.18
+- TensorFlow 2.20
 - FastAPI
 - NumPy, Pandas
 
@@ -116,7 +116,7 @@ git checkout -b feature/your-feature
 python3 -m pytest tests/ -v
 
 # Run demos to verify
-python3 demo_improvements.py
+python3 examples/demo_improvements.py
 ```
 
 ### 2. Adding New Features

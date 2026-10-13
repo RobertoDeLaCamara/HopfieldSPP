@@ -25,13 +25,13 @@ The original HopfieldSPP implementation had **7 critical flaws** that have been 
 
 ```bash
 # Run demo
-python3 demo_improvements.py
+python3 examples/demo_improvements.py
 
 # Run tests
 python3 -m pytest tests/test_improved_model.py -v
 
 # Compare models
-python3 compare_models.py
+python3 examples/compare_models.py
 ```
 
 ## Usage

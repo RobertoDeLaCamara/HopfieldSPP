@@ -3,7 +3,7 @@
 ## Quick Navigation
 
 ### 📚 Documentation
-- **[README.md](README.md)** - Main repository documentation
+- **[README.md](../README.md)** - Main repository documentation
 - **[COMPLETE_SUMMARY.md](COMPLETE_SUMMARY.md)** - Complete overview of all improvements
 - **[IMPROVEMENTS.md](IMPROVEMENTS.md)** - Phase 1: Critical fixes (Improved model)
 - **[ADVANCED_IMPROVEMENTS.md](ADVANCED_IMPROVEMENTS.md)** - Phase 2: Advanced optimizations
@@ -13,19 +13,19 @@
 - **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** - Development guide
 
 ### 💻 Code
-- **[src/train_model_improved.py](src/train_model_improved.py)** - Phase 1 implementation
-- **[src/train_model_advanced.py](src/train_model_advanced.py)** - Phase 2 implementation
-- **[src/main_improved.py](src/main_improved.py)** - API with caching
+- **[src/train_model_improved.py](../src/train_model_improved.py)** - Phase 1 implementation
+- **[src/train_model_advanced.py](../src/train_model_advanced.py)** - Phase 2 implementation
+- **[src/main_improved.py](../src/main_improved.py)** - API with caching
 
 ### 🧪 Tests & Demos
-- **[tests/test_improved_model.py](tests/test_improved_model.py)** - Test suite
-- **[demo_improvements.py](demo_improvements.py)** - Phase 1 demo
-- **[demo_advanced.py](demo_advanced.py)** - Phase 2 demo
-- **[visual_comparison.py](visual_comparison.py)** - Visual algorithm comparison
+- **[tests/test_improved_model.py](../tests/test_improved_model.py)** - Test suite
+- **[examples/demo_improvements.py](../examples/demo_improvements.py)** - Phase 1 demo
+- **[examples/demo_advanced.py](../examples/demo_advanced.py)** - Phase 2 demo
+- **[examples/visual_comparison.py](../examples/visual_comparison.py)** - Visual algorithm comparison
 
 ### 📊 Benchmarks
-- **[compare_models.py](compare_models.py)** - Original vs Improved
-- **[benchmark_all.py](benchmark_all.py)** - All three versions
+- **[examples/compare_models.py](../examples/compare_models.py)** - Original vs Improved
+- **[examples/benchmark_all.py](../examples/benchmark_all.py)** - All three versions
 
 ---
 
@@ -41,7 +41,7 @@
 
 #### ...use the improved code
 → Read **[README_IMPROVEMENTS.md](README_IMPROVEMENTS.md)** for quick start
-→ Read **[README.md](README.md)** for full documentation
+→ Read **[README.md](../README.md)** for full documentation
 
 #### ...use the API
 → Read **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)**
@@ -50,14 +50,14 @@
 → Read **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)**
 
 #### ...see it in action
-→ Run **demo_improvements.py** or **demo_advanced.py**
+→ Run **examples/demo_improvements.py** or **examples/demo_advanced.py**
 
 #### ...benchmark performance
-→ Run **benchmark_all.py**
+→ Run **examples/benchmark_all.py**
 
 #### ...understand the algorithm
-→ Run **visual_comparison.py**
-→ Read **[README.md](README.md)** - Algorithm section
+→ Run **examples/visual_comparison.py**
+→ Read **[README.md](../README.md)** - Algorithm section
 
 ---
 
